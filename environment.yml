@@ -1,0 +1,17 @@
+name: live2p
+channels:
+ - conda-forge
+dependencies:
+ - caiman
+ - python
+ - pip
+ - websockets
+ - websocket-client
+ - pandas
+ - seaborn
+ - xarray
+ - jupyterlab
+ - notebook
+ - pip:
+   - scanimage-tiff-reader
+   - flask
