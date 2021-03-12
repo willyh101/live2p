@@ -10,12 +10,17 @@ from live2p.server import Live2pServer
 
 ip = 'localhost'
 port = 7777
-folder = 'e:/caiman_scratch/ori_20210209_seed'
-data_folder = 'e:/caiman_scratch/ori_20210209'
+# folder = 'e:/caiman_scratch/ori_20210209_seed'
+# data_folder = 'e:/caiman_scratch/ori_20210209'
+folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_init'
+data_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3'
 nplanes = 3
 nchannels = 2
 mm3d_path = glob(data_folder+'/*.mat')[0]
 
+now = datetime.now()
+output_folder = Path(f'e:/caiman_scratch/test_results/{now.strftime("%Y%m%d_%H_%M_%S")}')
+output_folder.mkdir(exist_ok=True, parents=True)
 
 # LOGFILE = folder + '/caiman/out/pipeline_test.log'
 LOGFORMAT = '{relativeCreated:08.0f} - {levelname:8} - [{module}:{funcName}:{lineno}] - {message}'
@@ -25,12 +30,12 @@ logger = logging.getLogger('live2p')
 logger.setLevel(logging.DEBUG)
 
 
-test_params_undseeded = {
+test_params_unseeded = {
     'fr': 6.36,
     'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
     'nb': 2,  # background compenents -> nb: 3 for complex
     'decay_time': 1.0,  # sensor tau
-    'gSig': (7, 7),  # expected half size of neurons in pixels, very important for proper component detection
+    'gSig': (5, 5),  # expected half size of neurons in pixels, very important for proper component detection
     'init_method': 'bare',
     'motion_correct': True,
     'expected_comps': 750,
@@ -40,10 +45,11 @@ test_params_undseeded = {
     'pw_rigid': False,
     'dist_shape_update': False,
     'normalize': True,
-    'sniper_mode': False,
-    'test_both': False,
-    'ring_CNN': False,
+    'sniper_mode': True,
+    'test_both': True,
+    'ring_CNN': True,
     'simultaneously': True,
+    'use_cuda': False,
 }
 
 test_params_seeded = {
@@ -65,13 +71,36 @@ test_params_seeded = {
     'test_both': False,
     'ring_CNN': False,
     'simultaneously': True,
+    'use_cuda': False,
+}
+
+test_params_seeded_add = {
+    'fr': 6.36,
+    'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
+    'nb': 2,  # background compenents -> nb: 3 for complex
+    'decay_time': 1.0,  # sensor tau
+    'gSig': (7, 7),  # expected half size of neurons in pixels, very important for proper component detection
+    'init_method': 'seeded',
+    'motion_correct': True,
+    'expected_comps': 600,
+    'update_num_comps': True,
+    'update_freq': 100,
+    'niter_rig': 2,
+    'pw_rigid': False,
+    'dist_shape_update': False,
+    'normalize': True,
+    'sniper_mode': False,
+    'test_both': False,
+    'ring_CNN': False,
+    'simultaneously': True,
+    'use_cuda': False,
 }
 
 server_settings = {
     'ip': ip,
     'port': port,
-    'output_folder': 'test_fake',
-    'params': test_params_seeded ,
+    'output_folder': str(output_folder),
+    'params': test_params_unseeded,
     'Ain_path': mm3d_path,
     'use_prev_init': False,
     'xslice': slice(110,512-110)
