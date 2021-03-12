@@ -43,7 +43,7 @@ class Live2pServer:
         
     def _start_ws_server(self):
         """Starts the WS server."""
-        serve = websockets.serve(self.handle_incoming_ws, self.ip, self.port, max_size=5000000, max_queue=None)
+        serve = websockets.serve(self.handle_incoming_ws, self.ip, self.port)
         asyncio.get_event_loop().run_until_complete(serve)
         Alert('Ready to launch!', 'success')
         
