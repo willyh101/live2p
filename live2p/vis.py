@@ -5,10 +5,18 @@ import scipy.stats as stats
 
 def run_pipeline(df, analysis_window, col_name):
     """
-    [summary]
+    Runs the visual analysis pipeline on a DataFrame. Creates and returns
+    the mean DataFrame, finds visually responsive cells, finds preferred and
+    ortho orientations (and preferred direction), and calculates OSI. Appends
+    and returns values to the original DataFrame and mean DataFrame.
 
     Args:
-        df ([type]): [description]
+        df (pd.DataFrame): the input DataFrame
+        analysis_window (tuple): start and stop time of window to get mean response from
+        col_name (str): Name of column to calculate mean from.
+
+    Returns:
+        2 dataframes, mean and original with values appended.
     """
     
     mdf = make_mean_df(df, analysis_window, col_name)
@@ -174,6 +182,14 @@ def pdir(df):
     pref_dir.name = 'pdir'
 
     return pref_dir
+
+def odir(df):
+    """Calculates ortho direction."""
+    df = df.loc[df.ori != -45]
+    ortho_dir = df.set_index('ori').groupby(['cell'])['df'].idxmin()
+    ortho_dir.name = 'odir'
+    
+    return ortho_dir
 
 def osi(df):
     """

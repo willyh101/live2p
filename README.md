@@ -36,4 +36,3 @@ This file will run the server that ScanImage will talk to (currently via websock
 
 * Set the output folder to where the final data gets saved. Could be a folder on your data drive or on a server somewhere. It doesn't really matter. (_note: the data saved there will be overwritten with each run of live2p_) The output data is also saved into the same folder where your tiffs are and that does not need to be specified.
 
-To be continued...
