@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import queue
+import logging
 from glob import glob
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from ...utils import slice_movie
 from ...workers import RealTimeQueue
 from .alerts import Alert
 
+logger = logging.getLogger('live2p')
 
 class Live2pServer:
     def __init__(self, ip, port, output_folder, params, 
@@ -33,13 +35,16 @@ class Live2pServer:
         self.workers = None
         self.lengths = []
         self.kwargs = kwargs
-        self.folder = None
         
+        # these are assigned by send_setup
+        self.folder = None
+        self.fr = None
         self.nplanes = 3
         self.nchannels = 2
                 
         Alert(f'Starting WS server ({self.url})...', 'success')
         self._start_ws_server()
+        
         
     def _start_ws_server(self):
         """Starts the WS server."""
@@ -50,11 +55,13 @@ class Live2pServer:
         self.loop = asyncio.get_event_loop()
         self.loop.run_forever()
         
+        
     async def handle_incoming_ws(self, websocket, path):
         """Handle incoming data via websocket."""
         
         async for payload in websocket:
             await self.route(payload)
+            
             
     async def route(self, payload):
         """
@@ -133,6 +140,7 @@ class Live2pServer:
         
         # run the queues
         await self.run_queues()
+            
                 
     async def run_queues(self):
         # start the queues on their loop and wait for them to return a result
@@ -142,6 +150,11 @@ class Live2pServer:
         # from here do final analysis
         # results will be a list of dicts
         Alert('Processing and saving final data.', 'info')
+        
+        if self.folder is not None:
+            # added to make sure in some weird case self.folder doesn't get assigned
+            self.process_and_save(results, save_path=self.folder)
+            
         self.process_and_save(results)
         
         # Return True to release back to main loop
@@ -151,6 +164,7 @@ class Live2pServer:
         Alert('Live2p finished. Shutting down server.', 'success')
         self.loop.stop()
          
+         
     def start_worker(self, plane):
         self.qs.append(queue.Queue())
         Alert(f'Starting RealTimeWorker {plane}', 'info')
@@ -158,6 +172,7 @@ class Live2pServer:
         worker = RealTimeQueue(init_files, plane, self.nchannels, self.nplanes,
                                self.params, self.qs[plane], Ain_path=self.Ain_path, **self.kwargs)
         return worker
+
 
     async def put_tiff_frames_in_queue(self, tiff_name=None):
         # added sleep because last tiff isn't closed in time I think
@@ -175,10 +190,12 @@ class Live2pServer:
             for f in mov:
                 self.qs[p].put_nowait(f.squeeze())
     
+    
     async def stop_queues(self):
         Alert('Recieved acqAbort. Workers will continue running until all frames are completed.', 'info')
         for q in self.qs:
             q.put_nowait('STOP')
+            
             
     def get_last_tiff(self):
         crap = []
@@ -200,7 +217,24 @@ class Live2pServer:
 
         return last_tiffs[-1]
     
-    def process_and_save(self, results):
+    
+    def process_and_save(self, results, save_path=None):
+        """
+        Concatenate 'C' data across planes from results. Saves the raw data C and trial lengths, then
+        processes the data, making it trialwise, min subtracting, and scaling. Saves output data in 
+        several formats including json, npy, and mat.
+
+        Args:
+            results (list): list of results returned by plane workers
+            save_path (str, optional): Path to save data. Defaults to None which saves in the
+                                       self.output_folder directory
+        """
+        
+        if save_path is None:
+            save_path = self.output_folder
+        else:
+            save_path = Path(save_path)
+        
         c_list = [r['C'] for r in results]
         c_all = np.concatenate(c_list, axis=0)
         out = {
@@ -209,30 +243,36 @@ class Live2pServer:
         }
         
         # first save the raw data in case it fails (concatentated)
-        fname = self.output_folder/'raw_data.json'
-        with open(fname, 'w') as f:
-            json.dump(out, f)
-        
-        # do proccessing and save trialwise json
-        traces = process_data(**out, normalizer='scale')
-        out = {
-            'traces': traces.tolist()
-        }
-        fname = self.output_folder/'traces_data.json'
-        with open(fname, 'w') as f:
-            json.dump(out, f)
+        # added a try-except block here so the server will eventually quit if it fails
+        try:
+            fname = self.output_folder/'raw_data.json'
+            with open(fname, 'w') as f:
+                json.dump(out, f)
             
-        # save it as a npy also
-        fname = self.output_folder/'traces.npy'
-        np.save(fname, c_all)
-        fname = self.output_folder/'psths.npy'
-        np.save(fname, traces)
-        
-        # save as matlab
-        fname = self.output_folder/'data.mat'
-        mat = {
-            'tracesCaiman': c_all,
-            'psthsCaiman': traces,
-            'trialLengths': self.lengths
-        }
-        sio.savemat(fname, mat)
+            # do proccessing and save trialwise json
+            traces = process_data(**out, normalizer='scale')
+            out = {
+                'traces': traces.tolist()
+            }
+            fname = self.output_folder/'traces_data.json'
+            with open(fname, 'w') as f:
+                json.dump(out, f)
+                
+            # save it as a npy also
+            fname = self.output_folder/'traces.npy'
+            np.save(fname, c_all)
+            fname = self.output_folder/'psths.npy'
+            np.save(fname, traces)
+            
+            # save as matlab
+            fname = self.output_folder/'data.mat'
+            mat = {
+                'tracesCaiman': c_all,
+                'psthsCaiman': traces,
+                'trialLengths': self.lengths
+            }
+            sio.savemat(fname, mat)
+            
+        except Exception:
+            Alert('Something with data saving has failed. Check printed error message.', 'error')
+            logger.exception('Saving data failed Check printed error message.')
