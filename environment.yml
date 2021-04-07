@@ -14,4 +14,3 @@ dependencies:
  - notebook
  - pip:
    - scanimage-tiff-reader
-   - flask
