@@ -7,11 +7,8 @@ from live2p.server import Live2pServer
 # I recommend using removing 110 pixels from each side. Maybe 120 for holography. Maybe less for vis stim. But 
 # it has to match whatever you did in MakeMasks3D.
 # also set the max number of frames you expect, is an upper limit so it can be really high (used for memory allocation)
-x_start = 110
-x_end = 512-110
-
-y_start = 0
-y_end = 512
+x_start = 120
+x_end = 512-120
 
 max_frames = 20000
 
@@ -23,13 +20,17 @@ mode = 'seeded' # or 'unseeded' but also untested
 # in most cases it can live in a central folder, but you could also specify
 template_path = 'D:/live2p_temp/template/makeMasks3D_img.mat'
 
+# extra trimming options if you want them but I haven't adjusted the output locs
+# for them so it could be weird
+y_start = 0
+y_end = 512
 
 # networking options
 # this computers IP (should be static at 192.168.10.104)
 # the corresponding IP addresses in networking.py must match exactly
 # you could also use 'localhost' if not sending any info from the DAQ
 ip = 'localhost'
-port = 5003
+port = 6000
 
 # path to caiman data output folder on server, doesn't need to change as long as the server is there
 # (it doesn't have to be a server folder, is just convenient for transferring to the DAQ)
