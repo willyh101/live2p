@@ -1,10 +1,15 @@
 function live2pSendSetup(src, evt, varargin)
 
-global ws
+% global ws
+ip = 'localhost';
+port = 6000;
+
+ws = Live2pWS(ip, port);
+ws.ClientObj.setConnectionLostTimeout(500);
 
 hSI = src.hSI;
 
-out.event = 'SETUP';
+out.EVENTTYPE = 'SETUP';
 out.nchannels = length(hSI.hChannels.channelSave);
 out.nplanes = hSI.hStackManager.numSlices;
 out.fr = hSI.hRoiManager.scanVolumeRate;

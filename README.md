@@ -14,7 +14,7 @@
 
 1. Activate the environment `conda activate live2p`
 
-1. Install the caiman_online package by running `pip install -e .` (the . is intentional)
+1. Install the caiman_online package by running `pip install -e .` (the . is intentional) On some machines you may need to run `pip3 install -e .` if the previous fails.
 
 1. Lastly, download and install the most recent [MatlabWebsocket](https://github.com/jebej/MatlabWebSocket) from GitHub. Follow their install instructions.
 

@@ -19,7 +19,7 @@ ws = Live2pWS(ip, port);
 
 % activate user functions
 % first remove any existing caiman fxns then activate them
-sendsetup = arrayfun(@(x) strcmp(x.UserFcnName,'sendSetup'), hSI.hUserFunctions.userFunctionsCfg);
+sendsetup = arrayfun(@(x) strcmp(x.UserFcnName,'live2pSendSetup'), hSI.hUserFunctions.userFunctionsCfg);
 if any(sendsetup)
     hSI.hUserFunctions.userFunctionsCfg(sendsetup) = [];
 end

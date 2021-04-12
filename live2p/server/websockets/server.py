@@ -111,6 +111,9 @@ class Live2pServer:
             
         elif event_type == 'SETUP':
             await self.handle_setup(data)
+
+        elif event_type == 'TEST':
+            logger.debug('TEST RECVD')
         
         
         ##-----Other useful messages-----###
