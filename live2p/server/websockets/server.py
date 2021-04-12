@@ -133,7 +133,9 @@ class Live2pServer:
             Alert(f'{key} set to {value}', 'info')
         
         # spawn queues and workers (without launching queue)
-        self.workers = [self.start_worker(p) for p in range(self.nplanes)]
+        # self.workers = [self.start_worker(p) for p in range(self.nplanes)]
+        tasks = [self.loop.run_in_executor(None, self.start_worker, p) for p in range(self.nplanes)]
+        self.workers = await asyncio.gather(*tasks)
         
         # finished setup, ready to go
         Alert("Ready to process online!", 'success')
