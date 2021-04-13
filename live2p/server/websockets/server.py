@@ -41,6 +41,10 @@ class Live2pServer:
         self.fr = None
         self.nplanes = 3
         self.nchannels = 2
+        
+        # if logging == True:
+        wslogs = logging.getLogger('websockets')
+        wslogs.setLevel(logging.DEBUG)
                 
         Alert(f'Starting WS server ({self.url})...', 'success')
         self._start_ws_server()
@@ -149,7 +153,9 @@ class Live2pServer:
                 
     async def run_queues(self):
         # start the queues on their loop and wait for them to return a result
+        logger.debug('Start queues.')
         tasks = [self.loop.run_in_executor(None, w.process_frame_from_queue) for w in self.workers]
+        logger.debug('Waiting for results')
         results = await asyncio.gather(*tasks)
         
         # from here do final analysis

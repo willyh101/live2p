@@ -315,9 +315,9 @@ class RealTimeQueue(Worker):
         Returns:
             json representation of the OnACID model
         """
-        while True:
             # could make this block with just self.q.get() but a while loop might enable a 
             # less buggy keyboard interrupt
+        while True:
             frame = self.q.get()
             
             ###-----FRAME DATA-----###
@@ -363,14 +363,14 @@ class RealTimeQueue(Worker):
                         
                     self.save_json()
                     data = self._model2dict()
-                    
-                    break
+
+                    break 
                 
                 else:
                     continue
                 
         return data
-    
+
     
                 
     def update_acid(self):

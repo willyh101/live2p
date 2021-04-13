@@ -1,11 +1,6 @@
 function live2pAcqDone(src, evt, varargin)
 
-% global ws
-ip = 'localhost';
-port = 6000;
-
-ws = Live2pWS(ip, port);
-ws.ClientObj.setConnectionLostTimeout(500);
+global ws
 hSI = src.hSI;
 
 % try to get the saved tiff name at the end of each acquistion
