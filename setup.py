@@ -16,5 +16,10 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url='https://github.com/willyh101/live2p',
     license='MIT',
-    packages=setuptools.find_packages()
+    packages=setuptools.find_packages(),
+    entry_points= {
+        'console_scripts': [
+            'live2p = live2p.__main__:main'
+        ]
+    }
 )
