@@ -20,13 +20,17 @@ from .alerts import Alert
 logger = logging.getLogger('live2p')
 
 class Live2pServer:
-    def __init__(self, ip, port, output_folder, params, 
-                 Ain_path=None, num_frames_max=10000, **kwargs):
+    def __init__(self, ip, port, params, 
+                  output_folder=None, Ain_path=None, num_frames_max=10000, **kwargs):
         
         self.ip = ip
         self.port = port
         self.url = f'ws://{ip}:{port}'
-        self.output_folder = Path(output_folder)
+        self.clients = set()
+        
+        # if output_folder is not None:
+        self.output_folder = Path(output_folder) if output_folder else None
+            
         self.params = params
         self.Ain_path = Ain_path     
         self.num_frames_max = num_frames_max
@@ -42,11 +46,12 @@ class Live2pServer:
         self.nplanes = 3
         self.nchannels = 2
         
-        # if logging == True:
-        wslogs = logging.getLogger('websockets')
-        wslogs.setLevel(logging.DEBUG)
+        if kwargs.pop('debug_ws', False):
+            wslogs = logging.getLogger('websockets')
+            wslogs.setLevel(logging.DEBUG)
                 
         Alert(f'Starting WS server ({self.url})...', 'success')
+        
         self._start_ws_server()
         
         
@@ -109,18 +114,24 @@ class Live2pServer:
         ###-----Route events and data here-----###
         if event_type == 'ACQDONE':
             await self.put_tiff_frames_in_queue(tiff_name=data.get('filename', None))
-                       
+            
         elif event_type == 'SESSIONDONE':
             await self.stop_queues()
             
         elif event_type == 'SETUP':
             await self.handle_setup(data)
-
-        elif event_type == 'TEST':
-            logger.debug('TEST RECVD')
-        
+            
+        elif event_type == 'START':
+            # since self.run_queues() awaits the results of the long running queues, it needs to
+            # scheduled as a co-routine. allows other socket messages to arrive in the socket.
+            asyncio.create_task(self.run_queues())
+            
         
         ##-----Other useful messages-----###
+        
+        elif event_type == 'TEST':
+            logger.debug('TEST RECVD')
+            
         elif event_type == 'UHOH':
             Alert('Forced quit from SI.', 'error')
             self.loop.stop()
@@ -146,16 +157,11 @@ class Live2pServer:
         
         # finished setup, ready to go
         Alert("Ready to process online!", 'success')
-        
-        # run the queues
-        await self.run_queues()
             
                 
     async def run_queues(self):
         # start the queues on their loop and wait for them to return a result
-        logger.debug('Start queues.')
         tasks = [self.loop.run_in_executor(None, w.process_frame_from_queue) for w in self.workers]
-        logger.debug('Waiting for results')
         results = await asyncio.gather(*tasks)
         
         # from here do final analysis
@@ -165,8 +171,10 @@ class Live2pServer:
         if self.folder is not None:
             # added to make sure in some weird case self.folder doesn't get assigned
             self.process_and_save(results, save_path=self.folder)
-            
-        self.process_and_save(results)
+        
+        if self.output_folder is not None:
+            # if not specified, don't save it!
+            self.process_and_save(results)
         
         # Return True to release back to main loop
         # return True
@@ -226,7 +234,7 @@ class Live2pServer:
         for crap_tiff in crap:
             os.remove(crap_tiff)
 
-        return last_tiffs[-1]
+        return str(last_tiffs[-1])
     
     
     def process_and_save(self, results, save_path=None):

@@ -185,8 +185,9 @@ class RealTimeQueue(Worker):
         self.use_prev_init = kwargs.get('use_prev_init', False)
         
         # use_prev_init is not fully working yet
-        logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
-        self.use_prev_init = False
+        if self.use_prev_init:
+            logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
+            self.use_prev_init = False
         
         # setup initial parameters
         self.t = 0 # current frame is on
