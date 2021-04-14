@@ -9,10 +9,11 @@ import websockets
 from live2p.server import Live2pServer
 
 ip = 'localhost'
-port = 7777
+port = 6000
 # folder = 'e:/caiman_scratch/ori_20210209_seed'
 # data_folder = 'e:/caiman_scratch/ori_20210209'
-folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_init'
+init_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_init'
+# init_folder = 'd:/Frankenrig/Experiments/w30_2/20210324/e2'
 data_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3'
 nplanes = 3
 nchannels = 2
@@ -100,10 +101,11 @@ server_settings = {
     'ip': ip,
     'port': port,
     'output_folder': str(output_folder),
-    'params': test_params_unseeded,
+    'params': test_params_seeded,
     'Ain_path': mm3d_path,
     'use_prev_init': False,
-    'xslice': slice(110,512-110)
+    'xslice': slice(110,512-110),
+    'debug_ws': True,
 }
 
 def test_run_server():
@@ -118,7 +120,7 @@ def test_send_setup():
                 'nchannels': nchannels,
                 'nplanes': nplanes,
                 'fr': 6.36,
-                'folder': folder
+                'folder': init_folder
             }
             await websocket.send(json.dumps(out))
         
