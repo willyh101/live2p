@@ -181,7 +181,7 @@ class RealTimeQueue(Worker):
         
         # other options
         self.use_CNN = False
-        self.update_freq = 200
+        self.update_freq = 500
         self.use_prev_init = kwargs.get('use_prev_init', False)
         
         # use_prev_init is not fully working yet

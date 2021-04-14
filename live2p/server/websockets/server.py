@@ -196,18 +196,31 @@ class Live2pServer:
     async def put_tiff_frames_in_queue(self, tiff_name=None):
         # added sleep because last tiff isn't closed in time I think
         await asyncio.sleep(0.5)
+
+        short_tiff_threshold = 5
         
-        if tiff_name is None:
-            tiff_name = self.get_last_tiff()
-            
-        for p in range(self.nplanes):
-            mov = slice_movie(tiff_name, x_slice=None, y_slice=None, 
-                              t_slice=slice(p*self.nchannels,-1,self.nchannels*self.nplanes))
-            if p==0:
-                # only want to do this once per tiff!
-                self.lengths.append(mov.shape[0])
-            for f in mov:
-                self.qs[p].put_nowait(f.squeeze())
+        try:
+            if tiff_name is None:
+                tiff_name = self.get_last_tiff()
+                
+            for p in range(self.nplanes):
+                mov = slice_movie(tiff_name, x_slice=None, y_slice=None, 
+                                t_slice=slice(p*self.nchannels,-1,self.nchannels*self.nplanes))
+                if mov.shape[0] > short_tiff_threshold:
+                    if p==0:
+                        # only want to do this once per tiff!
+                        self.lengths.append(mov.shape[0])
+                    for f in mov:
+                        self.qs[p].put_nowait(f.squeeze())
+                
+                # ! this isn't great because ideally we'd get the shape of the tiff first, not per plane
+                else:
+                    logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames/plane) was attempted to be added to the queue and was skipped.')
+                    return
+        except: # ScanImage can't open file is a generic exception
+            # this will skip the last file since we can't open it until ScanImage aborts
+            logger.warning('Failed to add tiff to queue. If this was the last acq, this is expected. Otherwise something is wrong.')
+
     
     
     async def stop_queues(self):

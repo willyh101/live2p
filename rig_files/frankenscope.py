@@ -21,10 +21,6 @@ mode = 'seeded' # or 'unseeded' but also untested
 # in most cases it can live in a central folder, but you could also specify
 template_path = 'D:/live2p_temp/template/makeMasks3D_img.mat'
 
-# mode for running caiman
-# string corresponding to dict name below (params_seeded, params_unseeded, params_seeded_add, etc.)
-mode = 'seeded'
-
 # extra trimming options if you want them but I haven't adjusted the output locs
 # for them so it could be weird
 y_start = 0
@@ -114,13 +110,7 @@ def assign_params(mode):
     return params
 
 
-def say_hi():
-    print(f"\nWelcome to live2p (v{version('live2p')})!")
-    print('Starting up the server...')
-    print('*** Note: to quit out you will probably need to close the console window. Ctrl-C is unlikely to work for now...\n')
-
 def start_live2p():
-    say_hi()
     params = assign_params(mode)
     Live2pServer(IP, PORT,  params, 
                  output_folder = output_folder,
