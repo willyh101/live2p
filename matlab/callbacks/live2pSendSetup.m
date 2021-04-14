@@ -10,3 +10,8 @@ out.fr = hSI.hRoiManager.scanVolumeRate;
 out.folder = hSI.hScan2D.logFilePath;
 
 ws.send(jsonencode(out))
+
+% send message to start up the queues
+clear out
+out.EVENTTYPE = 'START';
+ws.send(jsonencode(out))
