@@ -11,6 +11,58 @@ import sklearn
 with warnings.catch_warnings():
     warnings.simplefilter('ignore', category=FutureWarning)
     import caiman as cm
+    
+def process_data(c, splits, fr, stim_times=None, normalizer='scale', align_to=1, total_length=4):
+    
+    traces = clean_data(c, splits, normalizer=normalizer)
+    
+    # convert seconds to frames
+    stim_times *= int(fr)
+    align_to *= int(fr)
+    total_length *= int(fr)
+    baseline_length = align_to - 1
+    
+    if stim_times is not None:
+        traces = do_stimalign(traces, stim_times, align_to)
+        
+    traces = baseline_subtract(traces, baseline_length)
+    cut_traces = cut_psths(traces, length=total_length)
+    
+    return cut_traces
+    
+def clean_data(c, trial_lengths, normalizer='scale'):
+    """Min subtract, normalize, and make trialwise."""
+    
+    data  =  np.array(c)
+    # min subtract and normalize
+    data = min_subtract(data)
+    
+    norm_routines = {
+        'none': data, # nothing done...
+        'minmax': sklearn.preprocessing.minmax_scale(data, axis=1), # scaled to min max (not abs)
+        'zscore': stats.zscore(data, axis=1), # old fashion zscoring
+        'norm': sklearn.preprocessing.normalize(data, axis=1), # L2 norm
+        'scale': sklearn.preprocessing.scale(data, axis=1), # mean subtracted, divided by standard dev
+    }
+        
+    normed_data = norm_routines[normalizer]
+        
+    traces = make_trialwise(normed_data, trial_lengths)
+    
+    return traces
+
+def do_stimalign(traces, stim_times, align_to):
+    if len(stim_times) == 1:
+        traces = stim_align_all_cells(traces, stim_times, align_to)
+    
+    elif len(stim_times) > 1:
+        try:
+            assert len(stim_times) == traces.shape[0] # must have same length/size as the number of cells
+            traces = stim_align_by_cell(traces, stim_times, align_to)
+            
+        except AssertionError:
+            warnings.warn('Length of stim times was greater than one but did not match the number of cells. Stim alignment not done.')
+    return traces
 
 def load_json(path):
     with open(path, 'r') as file:
@@ -36,7 +88,7 @@ def make_trialwise(traces, splits):
     shortest = min([s.shape[1] for s in traces])
     return np.array([a[:, :shortest] for a in traces])
 
-def stim_align_trialwise(traces, times):
+def stim_align_by_cell(traces, times, new_start):
     """
     Make stim-aligned PSTHs from trialwise data (eg. trial x cell x time array). The 
     advantage of doing it this way (trialwise) is the trace for each cell gets rolled around
@@ -50,7 +102,26 @@ def stim_align_trialwise(traces, times):
     psth = np.zeros_like(traces)
 
     for i in range(traces.shape[0]):
-        psth[i,:,:] = np.array([np.roll(cell_trace, amt) for cell_trace, amt in zip(traces[i,:,:], times)])
+        psth[i,:,:] = np.array([np.roll(cell_trace, -amt+new_start) for cell_trace, amt in zip(traces[i,:,:], times)])
+
+    return psth
+
+def stim_align_all_cells(traces, time, new_start):
+    """
+    Make stim-aligned PSTHs from trialwise data (eg. trial x cell x time array). The 
+    advantage of doing it this way (trialwise) is the trace for each cell gets rolled around
+    to the other side of the array, thus eliminating the need for nan padding.
+
+    Args:
+        trialwise_traces (array-like): trial x cell x time array of traces data, typicall from make_trialwise
+        times (array-like): list of stim times for each cell, must match exactly, not sure how it
+                            handles nans yet...
+        new_start (int): frame number where the psths will be aligned to
+    """
+    psth = np.zeros_like(traces)
+
+    for i in range(traces.shape[0]):
+        psth[i,:,:] = np.array([np.roll(cell_trace, -amt+new_start) for cell_trace, amt in zip(traces[i,:,:], time.astype(int))])
 
     return psth
 
@@ -64,52 +135,13 @@ def find_com(A, dims, x_1stPix):
     i = [1, 0]
     return XYcoords[:,i] #swap them
 
-def process_data(c, splits, stim_times=None, normalizer='scale', func=None, *args, **kwargs):
-    """
-    Processes temporal data (taken from C) by subtracting off min for each cell and then 
-    optionally normalizing it on axis=1 (aka cells). Can use minmax (default), zscore, 
-    normalize, or scale. See sklearn.preprocessing for more info. Alternatively can pass
-    'other' to use a custom function (func) and passes *args and **kwargs to that function.
-    Finally, uses splits to make the data trialwise into trial x cells x time numpy array.
+def min_subtract(traces):
+    return traces - traces.min(axis=1).reshape(-1,1)
 
-    Args:
-        c (array-like): temporal data from caiman
-        splits (list): file lengths per tiff/trial, taken from memmap file name
-        stim_times (array-like): cellwise list of stim times, defaults to None.
-        normalizer (str, optional): Method to normalize traces by. Defaults to 'minmax'.
-        func (function): if normalizer is 'other', can pass in a function here (don't call)
-        *args and **kwargs get passed to func if 'other'
-    """
-    
-    if normalizer == 'other' and func is None:
-        raise Exception('You provided normalizer type other but no function')
-    if normalizer != 'other' and func is not None:
-        warnings.warn('Both named normalizer type and alternate function were provided. Defaulting to named.')
-    
-    c = np.array(c)
-    data = c - c.min(axis=1).reshape(-1,1)
-    
-    # normalization routines
-    if normalizer == 'other':
-        normed_data = func(data, *args, **kwargs)
-    else:
-        norm_routines = {
-            'none': data, # nothing done...
-            'minmax': sklearn.preprocessing.minmax_scale(data, axis=1), # scaled to min max (not abs)
-            'zscore': stats.zscore(data, axis=1), # old fashion zscoring
-            'norm': sklearn.preprocessing.normalize(data, axis=1), # L2 norm
-            'scale': sklearn.preprocessing.scale(data, axis=1), # mean subtracted, divided by standard dev
-        }
-        
-        normed_data = norm_routines[normalizer]
-    
-    traces = make_trialwise(normed_data, splits)
-    
-    if stim_times:
-        assert len(stim_times) == c.shape[0] # must have same length/size as the number of cells
-        traces = stim_align_trialwise(traces, stim_times)
-    
-    return traces
+def baseline_subtract(cut_traces, baseline_length):
+    baseline = cut_traces[:,:,:baseline_length].mean(axis=2)
+    psths_baselined = cut_traces - baseline.reshape(*cut_traces.shape[:2], 1)
+    return psths_baselined
 
 def concat_chunked_data(jsons, f_src='c', *args, **kwargs):
     """
@@ -184,3 +216,7 @@ def extract_cell_locs(cm_obj):
     df = pd.concat([df, df.loc[:, 'CoM'].agg(lambda x: x[1]).rename('x')], axis=1)
     
     return df
+
+def cut_psths(stim_aligned, length=25):
+    cut_psths = stim_aligned[:,:,:length]
+    return cut_psths

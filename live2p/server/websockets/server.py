@@ -1,9 +1,8 @@
 import asyncio
 import json
+import logging
 import os
 import queue
-import logging
-from glob import glob
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +21,8 @@ logger = logging.getLogger('live2p')
 
 class Live2pServer:
     def __init__(self, ip, port, params, 
-                  output_folder=None, Ain_path=None, num_frames_max=10000, **kwargs):
+                  output_folder=None, Ain_path=None, num_frames_max=10000, 
+                  postprocess_kws=None, **kwargs):
         
         self.ip = ip
         self.port = port
@@ -40,12 +40,16 @@ class Live2pServer:
         self.workers = None
         self.lengths = []
         self.kwargs = kwargs
+        self.postprocess_kws = postprocess_kws
         
         # these are assigned by send_setup
         self.folder = None
         self.fr = None
         self.nplanes = 3
         self.nchannels = 2
+        
+        # these are recieved from the daq
+        
         
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
@@ -304,33 +308,33 @@ class Live2pServer:
         # first save the raw data in case it fails (concatentated)
         # added a try-except block here so the server will eventually quit if it fails
         try:
-            fname = self.output_folder/'raw_data.json'
+            fname = save_path/'raw_data.json'
             with open(fname, 'w') as f:
                 json.dump(out, f)
             
             # do proccessing and save trialwise json
-            traces = process_data(**out, normalizer='scale')
+            traces = process_data(**out, normalizer='zscore', **self.postprocess_kws, fr=self.fr)
             out = {
                 'traces': traces.tolist()
             }
-            fname = self.output_folder/'traces_data.json'
+            fname = save_path/'traces_data.json'
             with open(fname, 'w') as f:
                 json.dump(out, f)
                 
             # save it as a npy also
-            fname = self.output_folder/'traces.npy'
+            fname = save_path/'traces.npy'
             np.save(fname, c_all)
-            fname = self.output_folder/'psths.npy'
+            fname = save_path/'psths.npy'
             np.save(fname, traces)
             
             # save as matlab
-            fname = self.output_folder/'data.mat'
+            fname = save_path/'data.mat'
             mat = {
-                'tracesCaiman': c_all,
-                'psthsCaiman': traces,
-                'trialLengths': self.lengths
+                'onlineTraces': c_all,
+                'onlinePSTHs': traces,
+                'onlineTrialLengths': self.lengths
             }
-            sio.savemat(fname, mat)
+            sio.savemat(str(fname), mat)
             
         except Exception:
             Alert('Something with data saving has failed. Check printed error message.', 'error')
