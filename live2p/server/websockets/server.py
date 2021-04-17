@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import scipy.io as sio
+from live2p.simple_guis import openfilesgui
 from ScanImageTiffReader import ScanImageTiffReader
 
 import websockets
@@ -149,6 +150,22 @@ class Live2pServer:
         for key, value in data.items():
             setattr(self, key, value)
             Alert(f'{key} set to {value}', 'info')
+            
+        # either glob the tiffs from the epoch folder or get them from a GUI
+        tiffs = list(Path(self.folder).glob('*.tif*'))
+        if len(tiffs) == 0:
+            # do GUI in seperate thread, openfilesgui should return a list/tuple
+            tiffs = self.loop.run_in_executor(None, openfilesgui, 
+                                             Path(self.folder).parent,
+                                             'Select seed image.')
+            await tiffs
+            
+            # why didn't you select any?
+            if not tiffs:
+                logger.error("You didn't select a file and there were none in the epoch folder. Quitting...")
+                self.loop.stop()
+                
+        self.init_files = tiffs
         
         # spawn queues and workers (without launching queue)
         # self.workers = [self.start_worker(p) for p in range(self.nplanes)]
@@ -187,8 +204,8 @@ class Live2pServer:
     def start_worker(self, plane):
         self.qs.append(queue.Queue())
         Alert(f'Starting RealTimeWorker {plane}', 'info')
-        init_files = glob(self.folder + '/*.tif*')
-        worker = RealTimeQueue(init_files, plane, self.nchannels, self.nplanes,
+        
+        worker = RealTimeQueue(self.init_files, plane, self.nchannels, self.nplanes,
                                self.params, self.qs[plane], Ain_path=self.Ain_path, **self.kwargs)
         return worker
 
@@ -197,26 +214,36 @@ class Live2pServer:
         # added sleep because last tiff isn't closed in time I think
         await asyncio.sleep(0.5)
 
-        short_tiff_threshold = 5
+        short_tiff_threshold = 15
         
         try:
             if tiff_name is None:
                 tiff_name = self.get_last_tiff()
-                
-            for p in range(self.nplanes):
-                mov = slice_movie(tiff_name, x_slice=None, y_slice=None, 
-                                t_slice=slice(p*self.nchannels,-1,self.nchannels*self.nplanes))
-                if mov.shape[0] > short_tiff_threshold:
+            
+            # open data 
+            with ScanImageTiffReader(str(tiff_name)) as reader:
+                data = reader.data()
+            
+            # check if valid tiff
+            if data.shape[0] > short_tiff_threshold:    
+                # iterate through planes to get lengths and add to queue
+                for p in range(self.nplanes):
+                    # slice movie for this plane
+                    t_slice = slice(p*self.nchannels,-1,self.nchannels*self.nplanes)
+                    mov = data[t_slice, :, :]
+                    
+                    # get lengths for one plane only/once per tiff
                     if p==0:
-                        # only want to do this once per tiff!
                         self.lengths.append(mov.shape[0])
+                    
+                    # add frames to the queue
                     for f in mov:
                         self.qs[p].put_nowait(f.squeeze())
-                
-                # ! this isn't great because ideally we'd get the shape of the tiff first, not per plane
-                else:
-                    logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames/plane) was attempted to be added to the queue and was skipped.')
-                    return
+
+            else:
+                logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
+                return
+            
         except: # ScanImage can't open file is a generic exception
             # this will skip the last file since we can't open it until ScanImage aborts
             logger.warning('Failed to add tiff to queue. If this was the last acq, this is expected. Otherwise something is wrong.')
