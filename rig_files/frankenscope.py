@@ -1,7 +1,4 @@
-import logging
-from live2p.server import Live2pServer
-from importlib_metadata import version
-
+from live2p.start_live2p import start_live2p
 
 ### ----- THINGS YOU HAVE TO CHANGE! ----- ###
 # Set these first to match makeMasks3D!!!
@@ -30,8 +27,8 @@ y_end = 512
 # this computers IP (should be static at 192.168.10.104)
 # the corresponding IP addresses in networking.py must match exactly
 # you could also use 'localhost' if not sending any info from the DAQ
-IP = 'localhost'
-PORT = 6000
+ip = 'localhost'
+port = 6000
 
 # path to caiman data output folder on server, doesn't need to change as long as the server is there
 # (it doesn't have to be a server folder, is just convenient for transferring to the DAQ)
@@ -48,18 +45,17 @@ background = 3 # number of background components (default, 2 or 3).
 # a bigger number here decreases the background but too much can reduce the signal
 
 # logging level (print more or less processing info)
-# change logger.setLevel(logging.DEBUG) for more or logger.setLevel(logging.INFO) for less
-LOGFORMAT = '{relativeCreated:08.0f} - {levelname:8} - [{module}:{funcName}:{lineno}] - {message}'
-logging.basicConfig(level=logging.ERROR, format=LOGFORMAT, style='{')
-logger = logging.getLogger('live2p')
-logger.setLevel(logging.DEBUG) # more
-# logger.setLevel(logging.INFO) # less
+# 0 is no debug (INFO for live2p and ERROR for caiman)
+# 1 is debug live2p
+# 2 is live2p + caiman
+# 3 is live2p + websockets
+log_level = 1
 
 
 # caiman specific
 # some specified earlier, can make more changes here
 
-params_seeded = {
+seeded = {
     'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
     'nb': background,  # background compenents -> nb: 3 for complex
     'decay_time': 1.0,  # sensor tau
@@ -79,7 +75,7 @@ params_seeded = {
     'simultaneously': True,
 }
 
-params_undseeded = {
+undseeded = {
     'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
     'nb': background,  # background compenents -> nb: 3 for complex
     'decay_time': 1.0,  # sensor tau
@@ -99,26 +95,27 @@ params_undseeded = {
     'simultaneously': True,
 }
 
+server_settings = {
+    'ip': ip,
+    'port': port,
+    'output_folder': output_folder,
+    'Ain_path': template_path,
+    'xslice': slice(x_start, x_end),
+    'yslice': slice(y_start, y_end),
+    'num_frames_max': max_frames,
+}
+
 
 def assign_params(mode):
     if mode == 'seeded':
-        params = params_seeded
+        params = seeded
     elif mode == 'unseeded':
-        params = params_undseeded
+        params = undseeded
     else:
         raise NotImplementedError('Not a mode! You can choose seeded or unseeded.')
     return params
 
-
-def start_live2p():
-    params = assign_params(mode)
-    Live2pServer(IP, PORT,  params, 
-                 output_folder = output_folder,
-                 Ain_path = template_path,
-                 yslice = slice(y_start, y_end),
-                 num_frames_max=max_frames
-                 )
-
 # run everything
 if __name__ == '__main__':
-    start_live2p()
+    params = locals()[mode]
+    start_live2p(server_settings, params_dict=params, debug_level=log_level)
