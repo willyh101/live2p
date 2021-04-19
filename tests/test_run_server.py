@@ -1,18 +1,18 @@
 import asyncio
 import json
+from live2p.start_live2p import start_live2p
 import logging
 from datetime import datetime
 from glob import glob
 from pathlib import Path
 
 import websockets
-from live2p.server import Live2pServer
 
 ip = 'localhost'
 port = 6000
 # folder = 'e:/caiman_scratch/ori_20210209_seed'
 # data_folder = 'e:/caiman_scratch/ori_20210209'
-init_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_init'
+init_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_fake'
 # init_folder = 'd:/Frankenrig/Experiments/w30_2/20210324/e2'
 data_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3'
 nplanes = 3
@@ -101,15 +101,13 @@ server_settings = {
     'ip': ip,
     'port': port,
     'output_folder': str(output_folder),
-    'params': test_params_seeded,
     'Ain_path': mm3d_path,
     'use_prev_init': False,
     'xslice': slice(110,512-110),
-    'debug_ws': True,
 }
 
 def test_run_server():
-    serve = Live2pServer(**server_settings)
+    start_live2p(server_settings, params_dict=test_params_unseeded, debug_level=1)
     
 def test_send_setup():
     async def send():
@@ -123,7 +121,7 @@ def test_send_setup():
                 'folder': init_folder
             }
             await websocket.send(json.dumps(out))
-        
+                
     asyncio.get_event_loop().run_until_complete(send())
     
     
@@ -157,3 +155,4 @@ def test_send_data(rate):
     
 if __name__ == '__main__':
     test_run_server()
+    # test_send_setup()

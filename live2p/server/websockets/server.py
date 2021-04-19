@@ -7,13 +7,12 @@ from pathlib import Path
 
 import numpy as np
 import scipy.io as sio
-from live2p.simple_guis import openfilesgui
 from ScanImageTiffReader import ScanImageTiffReader
 
 import websockets
 
 from ...analysis import process_data
-from ...utils import slice_movie
+from ...guis import openfilesgui
 from ...workers import RealTimeQueue
 from .alerts import Alert
 
@@ -157,15 +156,19 @@ class Live2pServer:
             
         # either glob the tiffs from the epoch folder or get them from a GUI
         tiffs = list(Path(self.folder).glob('*.tif*'))
+        
+        # get from GUI pop-up if no tiffs present
         if len(tiffs) == 0:
             # do GUI in seperate thread, openfilesgui should return a list/tuple
-            tiffs = self.loop.run_in_executor(None, openfilesgui, 
+            tiff_task = self.loop.run_in_executor(None, openfilesgui, 
                                              Path(self.folder).parent,
                                              'Select seed image.')
-            await tiffs
+            await tiff_task
+            
+            tiffs = tiff_task.result()
             
             # why didn't you select any?
-            if not tiffs:
+            if not isinstance(tiffs, tuple):
                 logger.error("You didn't select a file and there were none in the epoch folder. Quitting...")
                 self.loop.stop()
                 

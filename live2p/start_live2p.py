@@ -1,4 +1,4 @@
-from live2p.server.websockets.server import Live2pServer
+from .server import Live2pServer
 from importlib_metadata import version
 import logging
 
