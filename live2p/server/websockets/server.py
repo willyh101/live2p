@@ -48,7 +48,7 @@ class Live2pServer:
         self.nchannels = 2
         
         # these are recieved from the daq
-        
+        self.stim_times = None
         
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
@@ -224,6 +224,7 @@ class Live2pServer:
         short_tiff_threshold = 15
         
         try:
+            # NOTE: could fold this into here so there is less opening and closing of tiffs
             if tiff_name is None:
                 tiff_name = self.get_last_tiff()
             
@@ -256,7 +257,7 @@ class Live2pServer:
             logger.warning('Failed to add tiff to queue. If this was the last acq, this is expected. Otherwise something is wrong.')
 
     
-    
+    # ? does this need to be async??
     async def stop_queues(self):
         Alert('Recieved acqAbort. Workers will continue running until all frames are completed.', 'info')
         for q in self.qs:
@@ -316,7 +317,7 @@ class Live2pServer:
                 json.dump(out, f)
             
             # do proccessing and save trialwise json
-            traces = process_data(**out, normalizer='zscore', **self.postprocess_kws, fr=self.fr)
+            traces = process_data(**out, normalizer='zscore', fr=self.fr)
             out = {
                 'traces': traces.tolist()
             }

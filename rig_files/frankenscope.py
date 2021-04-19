@@ -8,20 +8,23 @@ from live2p.start_live2p import start_live2p
 x_start = 120
 x_end = 512-120
 
-max_frames = 20000
-
 # choose one
 mode = 'seeded' # or 'unseeded' but also untested
 
-### ----- THINGS YOU PROBABLY DON'T NEED TO CHANGE ----- ###
 # makeMasks3D path
 # in most cases it can live in a central folder, but you could also specify
 template_path = 'D:/live2p_temp/template/makeMasks3D_img.mat'
+
+
+### ----- THINGS YOU PROBABLY DON'T NEED TO CHANGE ----- ###
 
 # extra trimming options if you want them but I haven't adjusted the output locs
 # for them so it could be weird
 y_start = 0
 y_end = 512
+
+# pre-allocated frame buffer
+max_frames = 20000
 
 # networking options
 # this computers IP (should be static at 192.168.10.104)

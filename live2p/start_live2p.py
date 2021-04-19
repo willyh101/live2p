@@ -11,6 +11,8 @@ def start_live2p(server_settings, params_dict, debug_level, **kwargs):
 
 * Note: to quit out you will probably need to close the console window. Ctrl-C is unlikely to work for now...
 * Remember to place your seed image as the only tiff in the current epoch directory!
+* If you forgot, you will be prompted to select a file(s) in a pop-up GUI.
+* The seed image should be ~500 frames and will take ~ 30 seconds to process before you start the experiment.
     
 Loading...
 

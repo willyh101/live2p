@@ -28,31 +28,36 @@ This file will run the server that ScanImage will talk to (currently via websock
 
 * The OnACID algorithm is very sensitive to time varying changes in fluorescence so we have to exclude any artifacts from visual or holograhic stimulation. Set `x_start` and `x_end` accordingly (`y_start` and `y_end` are available also, but less important). If you are seeding the algorithm with spatial components (eg. sources from makeMasks3D) **it is extremely important that `x_start` and `x_end` match what you used in makeMasks3D**.
 
-* Set `max_frames` to something that definitely exceeds the total number of frames you might collect (on a per-plane basis). This is an upper limit.
 
 * Set the mode you are running. This can be either `'seeded'` or `'unseeded'`. This will use default settings from the corresponding dictionary to setup CaImAn.
 
 * Set the IP and port to run on. Defaults are usually fine.
 
-* Set the output folder to where the final data gets saved. Could be a folder on your data drive or on a server somewhere. It doesn't really matter. (_note: the data saved there will be overwritten with each run of live2p_) The output data is also saved into the same folder where your tiffs are and that does not need to be specified.
+* Set the output folder to where the final data gets saved. Could be a folder on your data drive or on a server somewhere. It doesn't really matter. (_note: the data saved there will be overwritten with each run of live2p_) The output data is also saved into the same folder where your tiffs are and that does NOT need to be specified.
 
 * `template_path` needs to be set to a place where you save MM3D
 
-### Enable MATLAB callbacks
+## Running an experiment
+
+### Start live2p server
+
+- First, you need to start the live2p server. You can do this by:
+
+- A) from VSCode, directly running your rig_run.py file to start the live2p server with the green 'play' button at the top right of the screen or 
+
+- B) by opening an Anaconda/conda enabled commandline, activating the environment `conda activate live2p` and then simply entering `live2p`.
+
+### Enable MATLAB callbacks and connect
 To interface with the server you will need to enable some MATLAB callbacks. There is a single function that enables and activates them for convenience.
 
 1. Copy the file `matlab/live2p` to somewhere on your MATLAB path. Then, under PATHING and WEBSOCKET headings, change the paths so they are correct for your PC and the IP and port to whatever you want to use. **Port and IP must match whatever is in the rig_run.py file or nothing works.**
 
 1. Run the command `live2p` in MATLAB. This enables everything and setups up the websocket client.
 
-### Starting an experiment
-
-1. From VSCode or the command line (in the live2p conda environment), run your rig_run.py file to start the live2p server.
-
 1. Create a new folder that this epoch's tiffs will go into and change SI to save to that folder.
 
 1. Collect 500 frames of data. If you can add visual stimulation the algorithm will probably work better, but you don't have to. Save this into the folder that you will be collecting data into (alternatively if you've already done this, copy/paste into the current epoch folder).
 
-1. Get everything ready and hit `LOOP`. Live2p uses CaImAn OnACID which needs to be seeded with some initial data. Live2p will run initialization for each plane, which should take about 30 seconds for each plane.
+1. Get everything ready and hit `LOOP`. Live2p uses CaImAn OnACID which needs to be seeded with some initial data. Live2p will run initialization for each plane, which should take about 30 seconds for each plane. *If there are no tiffs in the epoch folder you will be prompted to select file(s) to seed from*.
 
 1. Once live2p is finished initializing, you can start running your experiment!
