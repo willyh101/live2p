@@ -48,7 +48,7 @@ class Live2pServer:
         self.nchannels = 2
         
         # these are recieved from the daq
-        self.stim_times = None
+        self.stim_times = 1
         
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
@@ -72,6 +72,7 @@ class Live2pServer:
     async def handle_incoming_ws(self, websocket, path):
         """Handle incoming data via websocket."""
         
+        # ! I think this could go in context manager for graceful failures
         async for payload in websocket:
             await self.route(payload)
             
@@ -317,7 +318,7 @@ class Live2pServer:
                 json.dump(out, f)
             
             # do proccessing and save trialwise json
-            traces = process_data(**out, normalizer='zscore', fr=self.fr)
+            traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=self.stim_times)
             out = {
                 'traces': traces.tolist()
             }

@@ -52,7 +52,7 @@ def clean_data(c, trial_lengths, normalizer='scale'):
     return traces
 
 def do_stimalign(traces, stim_times, align_to):
-    if len(stim_times) == 1:
+    if isinstance(stim_times, int):
         traces = stim_align_all_cells(traces, stim_times, align_to)
     
     elif len(stim_times) > 1:
@@ -121,7 +121,7 @@ def stim_align_all_cells(traces, time, new_start):
     psth = np.zeros_like(traces)
 
     for i in range(traces.shape[0]):
-        psth[i,:,:] = np.array([np.roll(cell_trace, -amt+new_start) for cell_trace, amt in zip(traces[i,:,:], time.astype(int))])
+        psth[i,:,:] = np.array([np.roll(cell_trace, -amt+new_start) for cell_trace, amt in zip(traces[i,:,:], int(time))])
 
     return psth
 

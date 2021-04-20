@@ -1,6 +1,10 @@
 from .server import Live2pServer
 from importlib_metadata import version
 import logging
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+warnings.simplefilter('ignore', category=ConvergenceWarning)
 
 
 def start_live2p(server_settings, params_dict, debug_level, **kwargs):
