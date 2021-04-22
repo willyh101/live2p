@@ -217,7 +217,6 @@ class Live2pServer:
                                self.params, self.qs[plane], Ain_path=self.Ain_path, **self.kwargs)
         return worker
 
-
     async def put_tiff_frames_in_queue(self, tiff_name=None):
         # added sleep because last tiff isn't closed in time I think
         await asyncio.sleep(0.5)
@@ -318,7 +317,7 @@ class Live2pServer:
                 json.dump(out, f)
             
             # do proccessing and save trialwise json
-            traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=self.stim_times)
+            traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=None)
             out = {
                 'traces': traces.tolist()
             }

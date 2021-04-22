@@ -17,12 +17,12 @@ def process_data(c, splits, fr, stim_times=None, normalizer='scale', align_to=1,
     traces = clean_data(c, splits, normalizer=normalizer)
     
     # convert seconds to frames
-    stim_times *= int(fr)
     align_to *= int(fr)
     total_length *= int(fr)
     baseline_length = align_to - 1
     
     if stim_times is not None:
+        stim_times *= int(fr)
         traces = do_stimalign(traces, stim_times, align_to)
         
     traces = baseline_subtract(traces, baseline_length)
