@@ -1,28 +1,19 @@
-from tkinter import Tk, filedialog
+from tkinter import Tk
+from tkinter.filedialog import askdirectory, askopenfilename, askopenfilenames
 
 def openfoldergui(rootdir=None, title=None):
-    root = Tk()
-    root.lift()
-    root.attributes("-topmost", True)
-    root.withdraw()
-    dirname = filedialog.askdirectory(parent=root, initialdir=rootdir,
-                                      title=title)
-    return dirname
+    return _get_opengui(askdirectory, initialdir=rootdir, title=title)
 
 def openfilegui(rootdir=None, title=None):
-    root = Tk()
-    root.lift()
-    root.attributes("-topmost", True)
-    root.withdraw()
-    dirname = filedialog.askopenfilename(parent=root, initialdir=rootdir,
-                                         title=title)
-    return dirname
+    return _get_opengui(askopenfilename, initialdir=rootdir, title=title)
 
 def openfilesgui(rootdir=None, title=None):
+    return _get_opengui(askopenfilenames,initialdir=rootdir, title=title)
+
+def _get_opengui(openfun, *args, **kwargs):
     root = Tk()
     root.lift()
     root.attributes("-topmost", True)
     root.withdraw()
-    dirname = filedialog.askopenfilenames(parent=root, initialdir=rootdir,
-                                         title=title)
+    dirname = openfun(parent=root, *args, **kwargs)
     return dirname
