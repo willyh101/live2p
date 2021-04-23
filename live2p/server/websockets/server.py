@@ -225,7 +225,7 @@ class Live2pServer:
         short_tiff_threshold = 15
         
         try:
-            # NOTE: could fold this into here so there is less opening and closing of tiffs
+            # TODO:  fold this into below so there is less opening and closing of tiffs
             if tiff_name is None:
                 tiff_name = self.get_last_tiff()
             
@@ -266,10 +266,10 @@ class Live2pServer:
             
             
     def get_last_tiff(self):
-        crap = []
-        lengths = []
-        # get the last tiff and make sure it's the right size
+        """Get the last tiff and make sure it's the correct size."""
+        
         last_tiffs = list(Path(self.folder).glob('*.tif*'))[-4:-2]
+        
         # pull the last few tiffs to make sure none are weirdos and get trial lengths
         for tiff in last_tiffs:
             with ScanImageTiffReader(str(tiff)) as reader:
@@ -277,11 +277,6 @@ class Live2pServer:
                 # check for bad tiffs
                 if data.shape[0] < 10: 
                     last_tiffs.remove(tiff)
-                    crap.append(tiff)
-                else:
-                    lengths.append(data.shape[0])
-        for crap_tiff in crap:
-            os.remove(crap_tiff)
 
         return str(last_tiffs[-1])
     
@@ -320,7 +315,7 @@ class Live2pServer:
             # do proccessing and save trialwise json
             traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=self.stim_times)
             out = {
-                'traces': traces.tolist()
+                'traces': traces.tolist(),
             }
             fname = save_path/'traces_data.json'
             with open(fname, 'w') as f:
@@ -344,3 +339,4 @@ class Live2pServer:
         except Exception:
             Alert('Something with data saving has failed. Check printed error message.', 'error')
             logger.exception('Saving data failed Check printed error message.')
+ 
