@@ -14,26 +14,26 @@ with warnings.catch_warnings():
     
 def process_data(c, splits, fr, stim_times=None, normalizer='scale', align_to=1, total_length=4):
     
-    traces = clean_data(c, splits, normalizer=normalizer)
+    traces, trialwise_data = clean_data(c, splits, normalizer=normalizer)
     
     # convert seconds to frames
-    stim_times *= int(fr)
     align_to *= int(fr)
     total_length *= int(fr)
     baseline_length = align_to - 1
     
     if stim_times is not None:
-        traces = do_stimalign(traces, stim_times, align_to)
+        stim_times *= int(fr)
+        trialwise_data = do_stimalign(trialwise_data, stim_times, align_to)
         
-    traces = baseline_subtract(traces, baseline_length)
-    cut_traces = cut_psths(traces, length=total_length)
+    trialwise_data = baseline_subtract(trialwise_data, baseline_length)
+    psths = cut_psths(trialwise_data, length=total_length)
     
-    return cut_traces
+    return traces, psths
     
 def clean_data(c, trial_lengths, normalizer='scale'):
     """Min subtract, normalize, and make trialwise."""
     
-    data  =  np.array(c)
+    data  =  np.asarray(c)
     # min subtract and normalize
     data = min_subtract(data)
     
@@ -49,9 +49,10 @@ def clean_data(c, trial_lengths, normalizer='scale'):
         
     traces = make_trialwise(normed_data, trial_lengths)
     
-    return traces
+    return normed_data, traces
 
 def do_stimalign(traces, stim_times, align_to):
+    # ! this isn't correct actually because to stim align by trials you still need a list
     if isinstance(stim_times, int):
         traces = stim_align_all_cells(traces, stim_times, align_to)
     
@@ -121,7 +122,7 @@ def stim_align_all_cells(traces, time, new_start):
     psth = np.zeros_like(traces)
 
     for i in range(traces.shape[0]):
-        psth[i,:,:] = np.array([np.roll(cell_trace, -amt+new_start) for cell_trace, amt in zip(traces[i,:,:], int(time))])
+        psth[i,:,:] = np.roll(traces[i,:,:], -int(time[i])+new_start, axis=1)
 
     return psth
 
