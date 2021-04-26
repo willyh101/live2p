@@ -1,12 +1,14 @@
 """Backend for handling online analysis of data from caiman."""
+# TODO: possibly split this up into data processing and generic stuff?
 
-import json
 import warnings
 
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import sklearn
+
+from .utils import load_json, load_as_obj
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore', category=FutureWarning)
@@ -52,6 +54,7 @@ def clean_data(c, trial_lengths, normalizer='scale'):
     return normed_data, traces
 
 def do_stimalign(traces, stim_times, align_to):
+    # FIXME: URGENT
     # ! this isn't correct actually because to stim align by trials you still need a list
     if isinstance(stim_times, int):
         traces = stim_align_all_cells(traces, stim_times, align_to)
@@ -65,14 +68,6 @@ def do_stimalign(traces, stim_times, align_to):
             warnings.warn('Length of stim times was greater than one but did not match the number of cells. Stim alignment not done.')
     return traces
 
-def load_json(path):
-    with open(path, 'r') as file:
-        data_json = json.load(file)
-    return data_json
-
-def load_as_obj(caiman_data_path):
-    """hdf5 -> caiman object"""
-    return cm.source_extraction.cnmf.cnmf.load_CNMF(caiman_data_path)
 
 def make_traces_from_json(path, *args, **kwargs):
     """
@@ -119,6 +114,8 @@ def stim_align_all_cells(traces, time, new_start):
                             handles nans yet...
         new_start (int): frame number where the psths will be aligned to
     """
+    # FIXME: URGERNT see above, list or single stim time??? depends on how this is working... for a
+    # single trial an int is fine, but for multiple trials you'd want to give a list
     psth = np.zeros_like(traces)
 
     for i in range(traces.shape[0]):
@@ -143,42 +140,6 @@ def baseline_subtract(cut_traces, baseline_length):
     baseline = cut_traces[:,:,:baseline_length].mean(axis=2)
     psths_baselined = cut_traces - baseline.reshape(*cut_traces.shape[:2], 1)
     return psths_baselined
-
-def concat_chunked_data(jsons, f_src='c', *args, **kwargs):
-    """
-    Takes chunks of data and combines them into a numpy array
-    of shape trial x cells x time, concatendated over trials, and
-    clips the trials at shortest frame number and fewest cells. Args and
-    kwargs are passed to process_data.
-
-    Args:
-        jsons (list): list of jsons to process
-        f_src (str): key to F data to load ('c' or 'dff'). Defaults to 'c'.
-
-    Returns:
-        trial_dat: 3D numpy array, (trials, cells, time)
-    """
-    # load and format
-    c_trials = [load_json(j)[f_src] for j in jsons]
-    s_trials = [load_json(j)['splits'] for j in jsons]
-
-    # smoosh all the lists of trials into a big array
-    trial_dat = []
-    for c,s in zip(c_trials, s_trials):
-        out = process_data(c, s, *args, **kwargs)
-        trial_dat.append(out)
-    
-    # ensure that trials are the same length and have same 
-    shortest = min([s.shape[2] for s in trial_dat]) # shortest trial
-    # fewest = min([c.shape[1] for c in trial_dat]) # fewest cells
-    # trial_dat = np.concatenate([a[:, :fewest, :shortest] for a in trial_dat])
-    try:
-        trial_dat = np.concatenate([a[:, :, :shortest] for a in trial_dat])
-    except:
-        print('WARNING LOST A CELL(S)!!!!')
-        fewest = min([c.shape[1] for c in trial_dat]) # fewest cells
-        trial_dat = np.concatenate([a[:, :fewest, :shortest] for a in trial_dat])
-    return trial_dat
 
 def posthoc_dff_and_coords(cm_obj):
     cm_obj.estimates.detrend_df_f()
