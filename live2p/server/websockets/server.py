@@ -312,7 +312,7 @@ class Live2pServer:
                 json.dump(out, f)
             
             # do proccessing and save trialwise json
-            traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=None)
+            _, traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=None)
             out = {
                 'traces': traces.tolist(),
             }
