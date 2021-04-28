@@ -160,6 +160,7 @@ class Worker:
                 
                     
 class RealTimeQueue(Worker):
+    """Processing queue for real-time CNMF (OnACID)."""
     def __init__(self, files, plane, nchannels, nplanes, params, q, 
                  num_frames_max=10000, Ain_path=None, **kwargs):
 

@@ -184,3 +184,6 @@ def load_json(path):
 def load_as_obj(caiman_data_path):
     """hdf5 -> caiman object"""
     return cm.source_extraction.cnmf.cnmf.load_CNMF(caiman_data_path)
+
+def get_tslice(z_idx, ch_idx, nchannels, nplanes):
+    return slice((z_idx*nchannels)+ch_idx, -1, nplanes*nchannels)
