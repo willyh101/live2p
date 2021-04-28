@@ -40,7 +40,7 @@ output_folder = 'F:/live2p_out'
 
 # motion correction params
 dxy = (1.5, 1.5) # spatial resolution in x and y in (um per pixel)
-max_shift_um = (12., 12.) # maximum shift in um
+max_shift_um = (10., 10.) # maximum shift in um
 patch_motion_xy = (100., 100.) # patch size for non-rigid correction in um
 
 # CNMF params
