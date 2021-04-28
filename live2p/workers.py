@@ -394,7 +394,7 @@ class RealTimeQueue(Worker):
         C = self.acid.estimates.C_on[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t]
         # f = denoised neuropil signal
         f = self.acid.estimates.C_on[:self.acid.params.get('init', 'nb'), self.frame_start:self.t]
-        # nC a.k.a noisyC is ??
+        # nC a.k.a noisyC very close to the raw F trace
         nC = self.acid.estimates.noisyC[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t]
         # YrA = signal noise, important for dff calculation
         YrA = nC - C
@@ -404,6 +404,9 @@ class RealTimeQueue(Worker):
     def _model2dict(self):
         A, b, C, f, nC, YrA = self.get_model()
         coords = find_com(A, self.acid.estimates.dims, self.xslice.start)
+        dims = self.acid.estimates.dims
+        # dff detrending may need to go away for fast online plotting
+        dff = self.acid.estimates.detrend_df_f()
         data = {
             'plane': int(self.plane),
             't': self.t,
@@ -413,7 +416,9 @@ class RealTimeQueue(Worker):
             'f':f.tolist(),
             'nC':nC.tolist(),
             'YrA':YrA.tolist(),
-            'CoM':coords.tolist()
+            'CoM':coords.tolist(),
+            'dims':dims,
+            'dff':dff.tolist()
         }
         return data
  
