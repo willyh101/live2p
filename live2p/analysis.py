@@ -141,44 +141,7 @@ def baseline_subtract(cut_traces, baseline_length):
     psths_baselined = cut_traces - baseline.reshape(*cut_traces.shape[:2], 1)
     return psths_baselined
 
-def posthoc_dff_and_coords(cm_obj):
-    cm_obj.estimates.detrend_df_f()
-    dff = cm_obj.estimates.F_dff
-    
-    coords = cm.utils.visualization.get_contours(cm_obj.estimates.A, dims=cm_obj.dims)
-    
-    return dff, coords
-
-def extract_cell_locs(cm_obj):
-    """
-    Get the neuron ID, center-of-mass, and coordinates(countors) of all cells from a caiman object. 
-    Loads directly from caiman obj or from a string/path and loads the caiman obj.
-
-    Args:
-        cm_obj ([caiman, str]): caiman object or path to caiman object
-
-    Returns:
-        pd.DataFrame of data
-    """
-    
-    if isinstance(cm_obj, str):
-        cm_obj = load_as_obj(cm_obj)
-    
-    try:
-        # this is for normal batch CNMF
-        cell_coords = cm.utils.visualization.get_contours(cm_obj.estimates.A, dims=cm_obj.dims)
-    except:
-        # this is for on acid CNMF
-        cell_coords = cm.utils.visualization.get_contours(cm_obj.estimates.A, dims=cm_obj.estimates.dims)
-    
-    df = pd.DataFrame(cell_coords)
-    
-     # x and y are flipped here bc rows x cols
-    df = pd.concat([df, df.loc[:, 'CoM'].agg(lambda x: x[0]).rename('y')], axis=1)
-    df = pd.concat([df, df.loc[:, 'CoM'].agg(lambda x: x[1]).rename('x')], axis=1)
-    
-    return df
-
 def cut_psths(stim_aligned, length=25):
     cut_psths = stim_aligned[:,:,:length]
     return cut_psths
+
