@@ -373,11 +373,9 @@ class RealTimeQueue(Worker):
                     break 
                 
                 else:
-                    continue
-                
+                    continue         
+                 
         return data
-
-    
                 
     def update_acid(self):
         (self.acid.estimates.A, 
@@ -407,10 +405,10 @@ class RealTimeQueue(Worker):
     
     def _model2dict(self):
         A, b, C, f, nC, YrA = self.get_model()
+        
         coords = find_com(A, self.acid.estimates.dims, self.xslice.start)
         dims = self.acid.estimates.dims
-        # dff detrending may need to go away for fast online plotting
-        dff = self.acid.estimates.detrend_df_f()
+            
         data = {
             'plane': int(self.plane),
             't': self.t,
@@ -421,9 +419,9 @@ class RealTimeQueue(Worker):
             'nC':nC.tolist(),
             'YrA':YrA.tolist(),
             'CoM':coords.tolist(),
-            'dims':dims,
-            'dff':dff.tolist()
+            'dims':dims
         }
+        
         return data
  
     def save_json(self, fname='realtime'):
