@@ -2,10 +2,6 @@ import logging
 import time
 from pathlib import Path
 from multiprocessing import Process, Queue
-from concurrent.futures import ProcessPoolExecutor
-# from threading import Thread
-# from queue import Queue
-import functools
 
 from ScanImageTiffReader import ScanImageTiffReader
 
@@ -86,7 +82,3 @@ def run_plane_offline(plane, tiff_folder, params, x_start, x_end,
     print('done!')
     
     return result
-
-# def run_offline_multiplane(tiff_folder, params, x_start, x_end, 
-#                            n_init=500, max_frames=30000, add_rate=1, **kwargs):
-    

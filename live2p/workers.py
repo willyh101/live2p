@@ -162,7 +162,7 @@ class Worker:
 class RealTimeQueue(Worker):
     """Processing queue for real-time CNMF (OnACID)."""
     def __init__(self, files, plane, nchannels, nplanes, params, q, 
-                 num_frames_max=10000, Ain_path=None, **kwargs):
+                 num_frames_max=10000, Ain_path=None, no_init=False, **kwargs):
 
         super().__init__(files, plane, nchannels, nplanes, params)
 
@@ -185,11 +185,6 @@ class RealTimeQueue(Worker):
         self.update_freq = 500
         self.use_prev_init = kwargs.get('use_prev_init', False)
         
-        # use_prev_init is not fully working yet
-        if self.use_prev_init:
-            logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
-            self.use_prev_init = False
-        
         # setup initial parameters
         self.t = 0 # current frame is on
         self.live_frame_count = 0
@@ -203,19 +198,28 @@ class RealTimeQueue(Worker):
         self.init_dir = self.data_root.parent/'live2p_init'
         self.init_path = self.init_dir/self.init_fname
         
+        
         logger.info('Starting live2p worker.')
         
-        # run OnACID initialization if needed
-        # check for the fname so it's organized by plane
-        if self.init_path.exists() and self.use_prev_init:
-            self.acid = self.initialize_from_file()
-        
-        # or do the init
+        if not no_init:
+            # use_prev_init is not fully working yet
+            if self.use_prev_init:
+                logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
+                self.use_prev_init = False
+                
+            # run OnACID initialization if needed
+            # check for the fname so it's organized by plane
+            if self.init_path.exists() and self.use_prev_init:
+                self.acid = self.initialize_from_file()
+            
+            # or do the init
+            else:
+                logger.info(f'Starting new OnACID initialization for live2p.')
+                self.init_dir.mkdir(exist_ok=True, parents=True)
+                init_mmap = self.make_init_mmap()
+                self.acid = self.initialize(init_mmap)
         else:
-            logger.info(f'Starting new OnACID initialization for live2p.')
-            self.init_dir.mkdir(exist_ok=True, parents=True)
-            init_mmap = self.make_init_mmap()
-            self.acid = self.initialize(init_mmap)   
+            logger.info('Skipping OnACID initialization.')
         
     def make_init_mmap(self):
         logger.debug('Making init memmap...')
@@ -369,11 +373,9 @@ class RealTimeQueue(Worker):
                     break 
                 
                 else:
-                    continue
-                
+                    continue         
+                 
         return data
-
-    
                 
     def update_acid(self):
         (self.acid.estimates.A, 
@@ -403,10 +405,10 @@ class RealTimeQueue(Worker):
     
     def _model2dict(self):
         A, b, C, f, nC, YrA = self.get_model()
+        
         coords = find_com(A, self.acid.estimates.dims, self.xslice.start)
-        # dims = self.acid.estimates.dims
-        # dff detrending may need to go away for fast online plotting
-        # dff = self.acid.estimates.detrend_df_f()
+        dims = self.acid.estimates.dims
+            
         data = {
             'plane': int(self.plane),
             't': self.t,
@@ -417,9 +419,9 @@ class RealTimeQueue(Worker):
             'nC':nC.tolist(),
             'YrA':YrA.tolist(),
             'CoM':coords.tolist(),
-            # 'dims':dims,
-            # 'dff':dff.tolist()
+            'dims':dims
         }
+        
         return data
  
     def save_json(self, fname='realtime'):
