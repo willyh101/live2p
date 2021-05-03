@@ -215,7 +215,6 @@ class RealTimeQueue(Worker):
             # or do the init
             else:
                 logger.info(f'Starting new OnACID initialization for live2p.')
-                self.init_dir.mkdir(exist_ok=True, parents=True)
                 init_mmap = self.make_init_mmap()
                 self.acid = self.initialize(init_mmap)
         else:
@@ -223,6 +222,7 @@ class RealTimeQueue(Worker):
         
     def make_init_mmap(self):
         logger.debug('Making init memmap...')
+        self.init_dir.mkdir(exist_ok=True, parents=True)
         self._validate_tiffs()
         mov = tiffs2array(movie_list=self.files, 
                           x_slice=self.xslice, 

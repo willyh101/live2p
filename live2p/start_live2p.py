@@ -51,6 +51,3 @@ Loading...
     
     # start server
     Live2pServer(**server_settings, params=params_dict, **kwargs)
-    
-
-    

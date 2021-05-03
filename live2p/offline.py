@@ -37,6 +37,7 @@ def append_to_queue(q, tiff_folder, tslice, add_rate=1):
     
     q.put('STOP')
     
+    
 def run_plane_offline(plane, tiff_folder, params, x_start, x_end, 
                       n_init=500, max_frames=30000, add_rate=1, **kwargs):
     
@@ -49,20 +50,7 @@ def run_plane_offline(plane, tiff_folder, params, x_start, x_end,
         logger.error(f'No makeMasks3D found at: {mm3d_file}')
         raise FileNotFoundError
     
-    nframes = 0
-    init_list = []
-    print('getting files for initialization....')
-    while nframes < n_init:
-        tiff = next(tiff_files)
-        
-        if nframes == 0:
-            nchannels = get_nchannels(str(tiff))
-            nplanes = get_nvols(str(tiff))
-            tslice = get_tslice(plane, 0, nchannels, nplanes) # assumes gcamp is 1st channel
-        
-        length = slice_movie(str(tiff), slice(None), slice(None), tslice).shape[0]
-        init_list.append(tiff)
-        nframes += length    
+    init_list, nchannels, nplanes, tslice = prepare_init(plane, n_init, tiff_files)    
     
     # once you have gotten the tiffs for init, run the queue
     print('starting initialization...')
@@ -82,3 +70,18 @@ def run_plane_offline(plane, tiff_folder, params, x_start, x_end,
     print('done!')
     
     return result
+
+def prepare_init(plane, n_init, tiff_files):
+    nframes = 0
+    init_list = []
+    print('getting files for initialization....')
+    while nframes < n_init:
+        tiff = next(tiff_files)
+        if nframes == 0:
+            nchannels = get_nchannels(str(tiff))
+            nplanes = get_nvols(str(tiff))
+            tslice = get_tslice(plane, 0, nchannels, nplanes)
+        length = slice_movie(str(tiff), slice(None), slice(None), tslice).shape[0]
+        init_list.append(tiff)
+        nframes += length
+    return init_list,nchannels,nplanes,tslice
