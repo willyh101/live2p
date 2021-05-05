@@ -408,6 +408,7 @@ class RealTimeQueue(Worker):
         
         coords = find_com(A, self.acid.estimates.dims, self.xslice.start)
         dims = self.acid.estimates.dims
+        shifts = np.array(self.acid.estimates.shifts)
             
         data = {
             'plane': int(self.plane),
@@ -419,7 +420,8 @@ class RealTimeQueue(Worker):
             'nC':nC.tolist(),
             'YrA':YrA.tolist(),
             'CoM':coords.tolist(),
-            'dims':dims
+            'dims':dims,
+            'shifts':shifts.tolist()
         }
         
         return data
