@@ -20,7 +20,7 @@ logger = logging.getLogger('live2p')
 class Live2pServer:
     def __init__(self, ip, port, params, 
                   output_folder=None, Ain_path=None, num_frames_max=10000, 
-                  postprocess_kws=None, **kwargs):
+                  postprocess_kws=None, use_init_gui=True, **kwargs):
         
         self.ip = ip
         self.port = port
@@ -39,6 +39,9 @@ class Live2pServer:
         self.lengths = []
         self.kwargs = kwargs
         self.postprocess_kws = postprocess_kws
+        
+        # custom settings
+        self.use_init_gui = use_init_gui
         
         # these are assigned by send_setup
         self.folder = None
@@ -164,7 +167,7 @@ class Live2pServer:
         tiffs = list(Path(self.folder).glob('*.tif*'))
         
         # get from GUI pop-up if no tiffs present
-        if len(tiffs) == 0:
+        if len(tiffs) == 0 or self.use_init_gui:
             # do GUI in seperate thread, openfilesgui should return a list/tuple
             tiff_task = self.loop.run_in_executor(None, openfilesgui, 
                                              Path(self.folder).parent,
