@@ -138,6 +138,12 @@ class Live2pServer:
             
         elif event_type == 'UHOH':
             Alert('Forced quit from SI.', 'error')
+            try:
+                logger.debug('Trying to stop any running queues.')
+                await self.stop_queues()
+            except Exception:
+                logger.debug('No queues to stop.')
+                pass   
             self.loop.stop()
     
         else:
