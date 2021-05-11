@@ -99,7 +99,7 @@ def test_onacid_init_from_tiffs():
         worker = RealTimeQueue(*init, num_frames_max=max_frames, 
                            Ain_path=mm3d_path, xslice=slice(x_start, x_end), no_init=True)
         init_mmap = worker.make_init_mmap()
-        acid = worker.initialize(init_mmap)
+        acid = worker._initialize_new(init_mmap)
         print('OK... RealTimeWorker initialized from tiffs successfullly.')
     except:
         print('*** FAILED: RealTimeWorker OnACID initialization from tiffs failed. ***')
@@ -109,7 +109,7 @@ def test_onacid_init_from_file():
     try:
         worker = RealTimeQueue(*init, num_frames_max=max_frames, 
                            Ain_path=mm3d_path, xslice=slice(x_start, x_end), no_init=True)
-        acid = worker.initialize_from_file()
+        acid = worker._initialize_from_file()
         print('OK... RealTimeWorker initialized from hdf5 file (previous init) successfullly.')
     except:
         print('*** FAILED: RealTimeWorker OnACID initialization from hdf5 file (previous init) failed. ***')

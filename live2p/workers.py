@@ -203,22 +203,23 @@ class RealTimeQueue(Worker):
         
         if not no_init:
             # use_prev_init is not fully working yet
-            if self.use_prev_init:
-                logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
-                self.use_prev_init = False
-                
-            # run OnACID initialization if needed
-            # check for the fname so it's organized by plane
-            if self.init_path.exists() and self.use_prev_init:
-                self.acid = self.initialize_from_file()
-            
-            # or do the init
-            else:
-                logger.info(f'Starting new OnACID initialization for live2p.')
-                init_mmap = self.make_init_mmap()
-                self.acid = self.initialize(init_mmap)
+            self.initialize_onacid()
         else:
             logger.info('Skipping OnACID initialization.')
+
+    def initialize_onacid(self):
+        if self.use_prev_init:
+            logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
+            self.use_prev_init = False
+        # run OnACID initialization if needed,            
+        # check for the fname so it's organized by plane
+        if self.init_path.exists() and self.use_prev_init:
+            self.acid = self._initialize_from_file()
+        # or do the init        
+        else:
+            logger.info(f'Starting new OnACID initialization for live2p.')
+            init_mmap = self.make_init_mmap()
+            self.acid = self._initialize_new(init_mmap)
         
     def make_init_mmap(self):
         logger.debug('Making init memmap...')
@@ -244,7 +245,7 @@ class RealTimeQueue(Worker):
         return init_mmap
     
     @tictoc
-    def initialize(self, fname_init):
+    def _initialize_new(self, fname_init):
         """
         Initialize OnACID from a tiff to generate initial model. Saves CNMF/OnACID object
         into ../live2p_init. Runs the initialization specified in params ('bare', 'seeded', etc.).
@@ -275,7 +276,7 @@ class RealTimeQueue(Worker):
         return acid
     
     @tictoc
-    def initialize_from_file(self):
+    def _initialize_from_file(self):
         """
         Initialize OnACID from a previous initialization or full OnACID session (not yet
         implemented).
@@ -296,11 +297,11 @@ class RealTimeQueue(Worker):
         
         if len(mmap_path_glob) == 0:
             logger.error('Initialization folder has no mmap file. Running init from scratch.')
-            return self.initialize()
+            return self._initialize_new()
         
         elif len(mmap_path_glob) > 1:
             logger.error('Multiple matching mmap files found. There can only be one per plane. Starting init from scratch.')
-            return self.initialize()
+            return self._initialize_new()
         
         mmap_path = str(mmap_path_glob[0])
         Yr, dims, T = cm.load_memmap(mmap_path)
