@@ -13,3 +13,4 @@ dependencies:
  - pip:
    - websockets
    - scanimage-tiff-reader
+   - pytest
