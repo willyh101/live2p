@@ -71,7 +71,7 @@ def run_plane_offline(plane, tiff_folder, params, x_start, x_end,
     
     return result
 
-def prepare_init(plane, n_init, tiff_files):
+def prepare_init(plane: int, n_init: int, tiff_files: list):
     nframes = 0
     init_list = []
     print('getting files for initialization....')

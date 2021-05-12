@@ -14,7 +14,7 @@ with warnings.catch_warnings():
     from caiman.source_extraction.cnmf.online_cnmf import OnACID
     from caiman.source_extraction.cnmf.params import CNMFParams
 
-from .utils import make_ain, tic, toc, tiffs2array
+from .utils import format_json, make_ain, tic, toc, tiffs2array
 from .wrappers import tictoc
 from .analysis import find_com
 
@@ -173,7 +173,7 @@ class RealTimeQueue(Worker):
         self.tslice = kwargs.get('tslice', slice(plane*nchannels, -1, nchannels * nplanes))
         self.xslice = kwargs.get('xslice', slice(0, 512))
         self.yslice = kwargs.get('yslice', slice(0, 512))
- 
+
         # look for Ain
         if isinstance(Ain_path, str):
             self.Ain = make_ain(Ain_path, plane, self.xslice.start, self.xslice.stop)
@@ -363,7 +363,7 @@ class RealTimeQueue(Worker):
                     # save
                     try:
                         self.save_acid()
-                    except:
+                    except Exception:
                         # need to catch exception here because we want to complete the future and
                         # process the final data
                         logger.exception('Error with saving OnACID hdf5.')
@@ -378,52 +378,47 @@ class RealTimeQueue(Worker):
                  
         return data
                 
-    def update_acid(self):
-        (self.acid.estimates.A, 
-        self.acid.estimates.b, 
-        self.acid.estimates.C,
-        self.acid.estimates.f,
-        self.acid.estimates.nC,
-        self.acid.estimates.YrA
-        ) = self.get_model()
-
+    def update_acid(self, **kwargs):
+        for k,v in kwargs.items():
+            setattr(self.acid.estimates, k, v)
+    
     def get_model(self):
-
-        # A = spatial component (cells)
-        A = self.acid.estimates.Ab[:, self.acid.params.get('init', 'nb'):].toarray()
-        # b = background components (neuropil)
-        b = self.acid.estimates.Ab[:, :self.acid.params.get('init', 'nb')].toarray()
-        # C = denoised trace for cells
-        C = self.acid.estimates.C_on[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t]
-        # f = denoised neuropil signal
-        f = self.acid.estimates.C_on[:self.acid.params.get('init', 'nb'), self.frame_start:self.t]
-        # nC a.k.a noisyC very close to the raw F trace
-        nC = self.acid.estimates.noisyC[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t]
+        model_dict = {
+            # A = spatial component (cells)
+            'A': self.acid.estimates.Ab[:, self.acid.params.get('init', 'nb'):].toarray(),
+            # b = background components (neuropil)
+            'b': self.acid.estimates.Ab[:, :self.acid.params.get('init', 'nb')].toarray(),
+            # C = denoised trace for cells
+            'C': self.acid.estimates.C_on[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t],
+            # f = denoised neuropil signal
+            'f': self.acid.estimates.C_on[:self.acid.params.get('init', 'nb'), self.frame_start:self.t],
+            # nC a.k.a noisyC very close to the raw F trace
+            'nC': self.acid.estimates.noisyC[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t],
+            # frame shifts, keep as list
+            'shifts': np.array(self.acid.estimates.shifts)[self.frame_start:,:]
+        }
         # YrA = signal noise, important for dff calculation
-        YrA = nC - C
+        # computed from nC and C so do add to dict
+        YrA = model_dict['nC'] - model_dict['C']
+        model_dict['YrA'] = YrA
         
-        return A, b, C, f, nC, YrA
+        return model_dict
     
     def _model2dict(self):
-        A, b, C, f, nC, YrA = self.get_model()
+        model = self.get_model()
+        model = format_json(**model)
         
-        coords = find_com(A, self.acid.estimates.dims, self.xslice.start)
+        coords = find_com(model['A'], self.acid.estimates.dims, self.xslice.start)
         dims = self.acid.estimates.dims
-        shifts = np.array(self.acid.estimates.shifts)
-            
+        
         data = {
             'plane': int(self.plane),
             't': self.t,
-            'A':A.tolist(),
-            'b':b.tolist(),
-            'C':C.tolist(),
-            'f':f.tolist(),
-            'nC':nC.tolist(),
-            'YrA':YrA.tolist(),
             'CoM':coords.tolist(),
             'dims':dims,
-            'shifts':shifts.tolist()
         }
+        
+        data.update(model)
         
         return data
  
