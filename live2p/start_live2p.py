@@ -1,10 +1,10 @@
-from .server import Live2pServer
-from importlib_metadata import version
 import logging
 import warnings
+from importlib_metadata import version
 from sklearn.exceptions import ConvergenceWarning
 
 warnings.simplefilter('ignore', category=ConvergenceWarning)
+warnings.simplefilter('ignore', category=DeprecationWarning)
 
 
 def start_live2p(server_settings, params_dict, debug_level, **kwargs):
@@ -13,17 +13,26 @@ def start_live2p(server_settings, params_dict, debug_level, **kwargs):
     
     Welcome to live2p (v{version('live2p')})!
 
-* Note: to quit out you will probably need to close the console window. Ctrl-C is unlikely to work for now...
-* Remember to place your seed image as the only tiff in the current epoch directory!
-* If you forgot, you will be prompted to select a file(s) in a pop-up GUI.
+* A popup GUI will ask you to select you seed image by default.
+* Still create a new epoch folder for the tiffs, so the results of live2p don't overwrite themselves if you run it multiple times.
+
 * The seed image should be ~500 frames and will take ~ 30 seconds to process before you start the experiment.
-* For some unknown reason, live2p might temporarily break Synergy. Restart Synergy to fix it.
+* For some unknown reason, live2p will temporarily break Synergy. Restart Synergy to fix it.
+
+* CTRL-C has been re-enabled, but we are relying on Windows to close ports and threads for now...
+* As Windows is Windows, there could be cases in which processes need to be manually closed via task manager.
+* The most obvious symptoms would be: 
+* 1. Unable to start live2p server due to socket already in use.
+* 2. Exceedingly high RAM or CPU usage in the background.
+* If this is the case force close any python.exe tasks.
 
 Loading...
 
 """
 
     print(msg)
+    
+    from .server import Live2pServer
 
 
     # handle debug
@@ -51,6 +60,3 @@ Loading...
     
     # start server
     Live2pServer(**server_settings, params=params_dict, **kwargs)
-    
-
-    

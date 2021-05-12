@@ -2,15 +2,15 @@ name: live2p
 channels:
  - conda-forge
 dependencies:
- - caiman
+ - caiman=1.8.8
  - python
  - pip
- - websockets
- - websocket-client
  - pandas
  - seaborn
  - xarray
  - jupyterlab
  - notebook
  - pip:
+   - websockets
    - scanimage-tiff-reader
+   - pytest

@@ -14,7 +14,7 @@ with warnings.catch_warnings():
     from caiman.source_extraction.cnmf.online_cnmf import OnACID
     from caiman.source_extraction.cnmf.params import CNMFParams
 
-from .utils import make_ain, tic, toc, tiffs2array
+from .utils import format_json, make_ain, tic, toc, tiffs2array
 from .wrappers import tictoc
 from .analysis import find_com
 
@@ -160,8 +160,9 @@ class Worker:
                 
                     
 class RealTimeQueue(Worker):
+    """Processing queue for real-time CNMF (OnACID)."""
     def __init__(self, files, plane, nchannels, nplanes, params, q, 
-                 num_frames_max=10000, Ain_path=None, **kwargs):
+                 num_frames_max=10000, Ain_path=None, no_init=False, **kwargs):
 
         super().__init__(files, plane, nchannels, nplanes, params)
 
@@ -172,7 +173,7 @@ class RealTimeQueue(Worker):
         self.tslice = kwargs.get('tslice', slice(plane*nchannels, -1, nchannels * nplanes))
         self.xslice = kwargs.get('xslice', slice(0, 512))
         self.yslice = kwargs.get('yslice', slice(0, 512))
- 
+
         # look for Ain
         if isinstance(Ain_path, str):
             self.Ain = make_ain(Ain_path, plane, self.xslice.start, self.xslice.stop)
@@ -183,11 +184,6 @@ class RealTimeQueue(Worker):
         self.use_CNN = False
         self.update_freq = 500
         self.use_prev_init = kwargs.get('use_prev_init', False)
-        
-        # use_prev_init is not fully working yet
-        if self.use_prev_init:
-            logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
-            self.use_prev_init = False
         
         # setup initial parameters
         self.t = 0 # current frame is on
@@ -202,22 +198,32 @@ class RealTimeQueue(Worker):
         self.init_dir = self.data_root.parent/'live2p_init'
         self.init_path = self.init_dir/self.init_fname
         
+        
         logger.info('Starting live2p worker.')
         
-        # run OnACID initialization if needed
+        if not no_init:
+            # use_prev_init is not fully working yet
+            self.initialize_onacid()
+        else:
+            logger.info('Skipping OnACID initialization.')
+
+    def initialize_onacid(self):
+        if self.use_prev_init:
+            logger.warning('Using a previous initialization is not yet supported. Setting use_prev_init = False.')
+            self.use_prev_init = False
+        # run OnACID initialization if needed,            
         # check for the fname so it's organized by plane
         if self.init_path.exists() and self.use_prev_init:
-            self.acid = self.initialize_from_file()
-        
-        # or do the init
+            self.acid = self._initialize_from_file()
+        # or do the init        
         else:
             logger.info(f'Starting new OnACID initialization for live2p.')
-            self.init_dir.mkdir(exist_ok=True, parents=True)
             init_mmap = self.make_init_mmap()
-            self.acid = self.initialize(init_mmap)   
+            self.acid = self._initialize_new(init_mmap)
         
     def make_init_mmap(self):
         logger.debug('Making init memmap...')
+        self.init_dir.mkdir(exist_ok=True, parents=True)
         self._validate_tiffs()
         mov = tiffs2array(movie_list=self.files, 
                           x_slice=self.xslice, 
@@ -239,7 +245,7 @@ class RealTimeQueue(Worker):
         return init_mmap
     
     @tictoc
-    def initialize(self, fname_init):
+    def _initialize_new(self, fname_init):
         """
         Initialize OnACID from a tiff to generate initial model. Saves CNMF/OnACID object
         into ../live2p_init. Runs the initialization specified in params ('bare', 'seeded', etc.).
@@ -270,7 +276,7 @@ class RealTimeQueue(Worker):
         return acid
     
     @tictoc
-    def initialize_from_file(self):
+    def _initialize_from_file(self):
         """
         Initialize OnACID from a previous initialization or full OnACID session (not yet
         implemented).
@@ -291,11 +297,11 @@ class RealTimeQueue(Worker):
         
         if len(mmap_path_glob) == 0:
             logger.error('Initialization folder has no mmap file. Running init from scratch.')
-            return self.initialize()
+            return self._initialize_new()
         
         elif len(mmap_path_glob) > 1:
             logger.error('Multiple matching mmap files found. There can only be one per plane. Starting init from scratch.')
-            return self.initialize()
+            return self._initialize_new()
         
         mmap_path = str(mmap_path_glob[0])
         Yr, dims, T = cm.load_memmap(mmap_path)
@@ -357,7 +363,7 @@ class RealTimeQueue(Worker):
                     # save
                     try:
                         self.save_acid()
-                    except:
+                    except Exception:
                         # need to catch exception here because we want to complete the future and
                         # process the final data
                         logger.exception('Error with saving OnACID hdf5.')
@@ -368,52 +374,52 @@ class RealTimeQueue(Worker):
                     break 
                 
                 else:
-                    continue
-                
+                    continue         
+                 
         return data
-
-    
                 
-    def update_acid(self):
-        (self.acid.estimates.A, 
-        self.acid.estimates.b, 
-        self.acid.estimates.C,
-        self.acid.estimates.f,
-        self.acid.estimates.nC,
-        self.acid.estimates.YrA
-        ) = self.get_model()
-
+    def update_acid(self, **kwargs):
+        for k,v in kwargs.items():
+            setattr(self.acid.estimates, k, v)
+    
     def get_model(self):
-
-        # A = spatial component (cells)
-        A = self.acid.estimates.Ab[:, self.acid.params.get('init', 'nb'):].toarray()
-        # b = background components (neuropil)
-        b = self.acid.estimates.Ab[:, :self.acid.params.get('init', 'nb')].toarray()
-        # C = denoised trace for cells
-        C = self.acid.estimates.C_on[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t]
-        # f = denoised neuropil signal
-        f = self.acid.estimates.C_on[:self.acid.params.get('init', 'nb'), self.frame_start:self.t]
-        # nC a.k.a noisyC is ??
-        nC = self.acid.estimates.noisyC[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t]
+        model_dict = {
+            # A = spatial component (cells)
+            'A': self.acid.estimates.Ab[:, self.acid.params.get('init', 'nb'):].toarray(),
+            # b = background components (neuropil)
+            'b': self.acid.estimates.Ab[:, :self.acid.params.get('init', 'nb')].toarray(),
+            # C = denoised trace for cells
+            'C': self.acid.estimates.C_on[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t],
+            # f = denoised neuropil signal
+            'f': self.acid.estimates.C_on[:self.acid.params.get('init', 'nb'), self.frame_start:self.t],
+            # nC a.k.a noisyC very close to the raw F trace
+            'nC': self.acid.estimates.noisyC[self.acid.params.get('init', 'nb'):self.acid.M, self.frame_start:self.t],
+            # frame shifts, keep as list
+            'shifts': np.array(self.acid.estimates.shifts)[self.frame_start:,:]
+        }
         # YrA = signal noise, important for dff calculation
-        YrA = nC - C
+        # computed from nC and C so do add to dict
+        YrA = model_dict['nC'] - model_dict['C']
+        model_dict['YrA'] = YrA
         
-        return A, b, C, f, nC, YrA
+        return model_dict
     
     def _model2dict(self):
-        A, b, C, f, nC, YrA = self.get_model()
-        coords = find_com(A, self.acid.estimates.dims, self.xslice.start)
+        model = self.get_model()
+        model = format_json(**model)
+        
+        coords = find_com(model['A'], self.acid.estimates.dims, self.xslice.start)
+        dims = self.acid.estimates.dims
+        
         data = {
             'plane': int(self.plane),
             't': self.t,
-            'A':A.tolist(),
-            'b':b.tolist(),
-            'C':C.tolist(),
-            'f':f.tolist(),
-            'nC':nC.tolist(),
-            'YrA':YrA.tolist(),
-            'CoM':coords.tolist()
+            'CoM':coords.tolist(),
+            'dims':dims,
         }
+        
+        data.update(model)
+        
         return data
  
     def save_json(self, fname='realtime'):

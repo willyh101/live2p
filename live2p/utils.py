@@ -7,11 +7,17 @@ import os
 import time
 from datetime import datetime
 from glob import glob
+import json
+import warnings
 
 import numpy as np
 import pandas as pd
 import scipy.io as sio
 from ScanImageTiffReader import ScanImageTiffReader
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore', category=FutureWarning)
+    import caiman as cm
 
 logger = logging.getLogger('live2p')
 
@@ -169,3 +175,21 @@ def format_json(**kwargs):
 def now():
     rn = datetime.now()
     return rn.strftime('%H:%M:%S')
+
+def load_json(path):
+    with open(path, 'r') as file:
+        data_json = json.load(file)
+    return data_json
+
+def load_as_obj(caiman_data_path):
+    """hdf5 -> caiman object"""
+    return cm.source_extraction.cnmf.cnmf.load_CNMF(caiman_data_path)
+
+def get_tslice(z_idx, ch_idx, nchannels, nplanes):
+    return slice((z_idx*nchannels)+ch_idx, -1, nplanes*nchannels)
+
+def get_true_mm3d_range(path, buffer=0):
+    mat = sio.loadmat(path)
+    sources = np.concatenate(mat['sources'].squeeze(), axis=2)
+    vals = np.argwhere(sources)[:,1]
+    return vals.min()-buffer, vals.max()+buffer
