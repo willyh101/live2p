@@ -3,6 +3,7 @@ import json
 import logging
 import queue
 from pathlib import Path
+import signal
 
 import numpy as np
 import scipy.io as sio
@@ -10,11 +11,14 @@ from ScanImageTiffReader import ScanImageTiffReader
 
 import websockets
 
-from ...analysis import process_data
-from ...guis import openfilesgui
-from ...workers import RealTimeQueue
+from live2p.analysis import process_data
+from live2p.guis import openfilesgui
+from live2p.workers import RealTimeQueue
+from live2p.utils import now
+
 from .alerts import Alert
 
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 logger = logging.getLogger('live2p')
 
 class Live2pServer:
@@ -50,7 +54,11 @@ class Live2pServer:
         self.nchannels = 2
         
         # these are recieved from the daq
-        self.stim_times = 1
+        # self.stim_times = 1
+        
+        # other logs
+        self.trialtimes_all = []
+        self.trialtimes_success = []
         
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
@@ -120,6 +128,7 @@ class Live2pServer:
             
         ###-----Route events and data here-----###
         if event_type == 'ACQDONE':
+            self.trialtimes_all.append(now())
             await self.put_tiff_frames_in_queue(tiff_name=data.get('filename', None))
             
         elif event_type == 'SESSIONDONE':
@@ -242,6 +251,8 @@ class Live2pServer:
             
             # check if valid tiff
             if data.shape[0] > short_tiff_threshold:    
+                # first, log trial time
+                self.trialtimes_success.append(now())
                 # iterate through planes to get lengths and add to queue
                 for p in range(self.nplanes):
                     # slice movie for this plane
@@ -260,7 +271,7 @@ class Live2pServer:
                 logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
                 return
             
-        except: # ScanImage can't open file is a generic exception
+        except Exception: # ScanImage can't open file is a generic exception
             # this will skip the last file since we can't open it until ScanImage aborts
             logger.warning('Failed to add tiff to queue. If this was the last acq, this is expected. Otherwise something is wrong.')
 
@@ -309,7 +320,8 @@ class Live2pServer:
         c_all = np.concatenate(c_list, axis=0)
         out = {
             'c': c_all.tolist(),
-            'splits': self.lengths
+            'splits': self.lengths,
+            'trialtimes': self.trialtimes_success
         }
         
         # first save the raw data in case it fails (concatentated)
