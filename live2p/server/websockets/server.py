@@ -178,12 +178,9 @@ class Live2pServer:
         # get from GUI pop-up if no tiffs present
         if len(tiffs) == 0 or self.use_init_gui:
             # do GUI in seperate thread, openfilesgui should return a list/tuple
-            tiff_task = self.loop.run_in_executor(None, openfilesgui, 
+            tiffs = await self.loop.run_in_executor(None, openfilesgui, 
                                              Path(self.folder).parent,
                                              'Select seed image.')
-            await tiff_task
-            
-            tiffs = tiff_task.result()
             
             # why didn't you select any?
             if not isinstance(tiffs, tuple):

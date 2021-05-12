@@ -17,7 +17,6 @@ def start_live2p(server_settings, params_dict, debug_level, **kwargs):
 * Still create a new epoch folder for the tiffs, so the results of live2p don't overwrite themselves if you run it multiple times.
 
 * The seed image should be ~500 frames and will take ~ 30 seconds to process before you start the experiment.
-* For some unknown reason, live2p will temporarily break Synergy. Restart Synergy to fix it.
 
 * CTRL-C has been re-enabled, but we are relying on Windows to close ports and threads for now...
 * As Windows is Windows, there could be cases in which processes need to be manually closed via task manager.
