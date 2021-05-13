@@ -2,11 +2,9 @@ name: live2p-gpu
 channels:
  - conda-forge
 dependencies:
- - caiman
+ - caiman=1.8.8
  - python
  - pip
- - websockets
- - websocket-client
  - pandas
  - seaborn
  - xarray
@@ -18,3 +16,5 @@ dependencies:
    - scanimage-tiff-reader
    - pycuda
    - scikit-cuda
+   - pytest
+   - websockets

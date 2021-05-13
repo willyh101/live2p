@@ -31,7 +31,7 @@ Loading...
 
     print(msg)
     
-    from .server import Live2pServer
+    from live2p.websockets.server import Live2pServer
 
 
     # handle debug
