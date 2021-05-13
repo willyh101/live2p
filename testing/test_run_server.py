@@ -5,8 +5,9 @@ import logging
 from datetime import datetime
 from glob import glob
 from pathlib import Path
-
+import multiprocessing
 import websockets
+import time
 
 ip = 'localhost'
 port = 6000
@@ -104,10 +105,11 @@ server_settings = {
     'Ain_path': mm3d_path,
     'use_prev_init': False,
     'xslice': slice(110,512-110),
+    'use_init_gui': False
 }
 
 def test_run_server():
-    start_live2p(server_settings, params_dict=test_params_unseeded, debug_level=1)
+    start_live2p(server_settings, params_dict=test_params_seeded, debug_level=1)
     
 def test_send_setup():
     async def send():
@@ -120,6 +122,8 @@ def test_send_setup():
                 'fr': 6.36,
                 'folder': init_folder
             }
+            await websocket.send(json.dumps(out))
+            out = {'EVENTYPE':'START'}
             await websocket.send(json.dumps(out))
                 
     asyncio.get_event_loop().run_until_complete(send())
@@ -151,8 +155,15 @@ def test_send_data(rate):
     current_time = now.strftime("%H:%M:%S")
     print('Last frame (a stop frame) sent at: ', current_time)
     
+def main():
+    thread = multiprocessing.Process(target=test_run_server)
+    thread.start()
     
+    time.sleep(10)
+    test_send_setup()
+    
+    time.sleep(60)
+    test_send_data(3)
     
 if __name__ == '__main__':
-    test_run_server()
-    # test_send_setup()
+    main()
