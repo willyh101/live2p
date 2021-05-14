@@ -1,14 +1,12 @@
 """Backend for handling online analysis of data from caiman."""
-# TODO: possibly split this up into data processing and generic stuff?
 
 import warnings
 
 import numpy as np
-import pandas as pd
 import scipy.stats as stats
 import sklearn
 
-from .utils import load_json, load_as_obj
+from ..utils import load_json
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore', category=FutureWarning)
