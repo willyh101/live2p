@@ -16,7 +16,7 @@ with warnings.catch_warnings():
 
 from .utils import format_json, make_ain, tic, toc, tiffs2array
 from .wrappers import tictoc
-from .analysis import find_com
+from .analysis.generic import find_com
 
 logger = logging.getLogger('live2p')
 

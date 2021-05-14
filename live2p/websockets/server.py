@@ -10,7 +10,7 @@ import scipy.io as sio
 from ScanImageTiffReader import ScanImageTiffReader
 
 from ..alerts import Alert
-from ..analysis import process_data
+from ..analysis.generic import process_data
 from ..guis import openfilesgui
 from ..utils import now
 from ..workers import RealTimeQueue
@@ -27,7 +27,6 @@ class Live2pServer:
         self.ip = ip
         self.port = port
         self.url = f'ws://{ip}:{port}'
-        self.clients = set()
         
         # if output_folder is not None:
         self.output_folder = Path(output_folder) if output_folder else None

@@ -19,7 +19,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     entry_points= {
         'console_scripts': [
-            'live2p = live2p.__main__:main'
+            'live2p = live2p.cli:main'
         ]
     }
 )
