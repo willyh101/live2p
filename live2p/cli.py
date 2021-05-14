@@ -1,7 +1,6 @@
 import argparse
 import importlib
-from .start_live2p import start_live2p
-
+from .start_live2p import start_live2p, DEFAULT_IP, DEFAULT_PORT
 
 def make_args():
     parser = argparse.ArgumentParser()
@@ -23,6 +22,15 @@ def make_args():
                         default='frankenscope',
                         help='selects the rigfile to use. just type the name in quotes w/o the .py')
     
+    parser.add_argument('--ip',
+                        default=DEFAULT_IP,
+                        help='set IP for server to run on.')
+    
+    parser.add_argument('-p', '--port',
+                        type=int,
+                        default=DEFAULT_PORT,
+                        help='set port for server to run on.')
+    
     return parser
 
 
@@ -36,8 +44,4 @@ def main():
     
     params = getattr(rigfile, rigfile.mode)
     
-    start_live2p(rigfile.server_settings, params, debug_level=args.debug)
-
-    
-if __name__ == '__main__':
-    main()
+    start_live2p(params_dict=params, debug_level=args.debug, ip=args.ip, port=args.port)
