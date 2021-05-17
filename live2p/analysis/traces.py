@@ -1,18 +1,40 @@
-"""Backend for handling online analysis of data from caiman."""
-
 import warnings
 
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 import sklearn.preprocessing
-import pandas as pd
 
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore', category=FutureWarning)
-    import caiman as cm
-    
 def process_data(raw_traces, trial_lengths, fr, new_start, norm_method='scale', stim_times=None, total_length=None):
+    """
+    Run the post-processing pipeline on traces. Performs min subtraction, normalizes the data, and
+    makes it into trialwise data (trials, cells, time). Optionally run stim alignment (either by 
+    stim times per cell or stim times per trial). Performs a trialwise baseline subtraction. Finally, 
+    optionally cut the PSTHs to a specified length.
     
+    Normalization methods:
+        * 'none' for no normalization or
+        * from sklearn.preprocessing:
+            - 'scale' = mean subtracted - std
+            - 'minmax' = scaled to min max (not abs)
+            - 'norm' = L2 norm
+        * from scipy.stats:
+            - 'zscore' = traditional zscoring
+        
+
+    Args:
+        raw_traces (array-like): Raw data, typically either C or nC
+        trial_lengths (array-like): lengths of each trial in frames
+        fr (float or int): frame rate of acquisition, per plane
+        new_start (float or int): time in seconds to align data to
+        norm_method (str, optional): Normalization method. Defaults to 'scale' (see above).
+        stim_times (array-like, optional): List of stim times that is lengths of trials or cells. Defaults to None.
+        total_length (float or int, optional): Desired length of PSTHs. Defaults to None (no cutting).
+
+    Returns:
+        traces (cells, frames)
+        trailwise_data (trials, cells, frames)
+    """
     
     # min subtract and normalize
     data  =  np.array(raw_traces)
@@ -67,16 +89,6 @@ def make_trialwise(traces, splits):
     traces = np.split(traces, np.cumsum(splits[:-1]).astype(np.uint), axis=1)
     shortest = min([s.shape[1] for s in traces])
     return np.array([a[:, :shortest] for a in traces])
-
-def make_images(caiman_obj):
-    Yr, dims, T = cm.load_memmap(caiman_obj.mmap_file)
-    return np.reshape(Yr, [T] + list(dims), order='F')
-
-def find_com(A, dims, x_1stPix):
-    XYcoords= cm.base.rois.com(A, *dims)
-    XYcoords[:,1] = XYcoords[:,1] + x_1stPix #add the dX from the cut FOV
-    i = [1, 0]
-    return XYcoords[:,i] #swap them
 
 def min_subtract(traces):
     return traces - traces.min(axis=1).reshape(-1,1)

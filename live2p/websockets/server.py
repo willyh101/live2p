@@ -10,7 +10,7 @@ import scipy.io as sio
 from ScanImageTiffReader import ScanImageTiffReader
 
 from ..alerts import Alert
-from ..analysis.generic import process_data
+from ..analysis.traces import process_data
 from ..guis import openfilesgui
 from ..utils import now
 from ..workers import RealTimeQueue
