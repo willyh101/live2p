@@ -322,14 +322,14 @@ class RealTimeQueue(Worker):
         Returns:
             json representation of the OnACID model
         """
-            # could make this block with just self.q.get() but a while loop might enable a 
-            # less buggy keyboard interrupt
+        
+        frame_time = []
         while True:
             frame = self.q.get()
             
             ###-----FRAME DATA-----###
             if isinstance(frame, np.ndarray):
-                frame_time = []
+                
                 t = tic()
                 
                 frame_ = frame[self.yslice, self.xslice].copy().astype(np.float32)
