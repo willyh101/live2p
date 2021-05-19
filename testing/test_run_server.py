@@ -8,14 +8,15 @@ from pathlib import Path
 import multiprocessing
 import websockets
 import time
+import threading
 
 ip = 'localhost'
 port = 6000
-# folder = 'e:/caiman_scratch/ori_20210209_seed'
-# data_folder = 'e:/caiman_scratch/ori_20210209'
-init_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_fake'
+init_folder = 'e:/caiman_scratch/ori_20210209_seed'
+data_folder = 'e:/caiman_scratch/ori_20210209'
+# init_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3_init'
 # init_folder = 'd:/Frankenrig/Experiments/w30_2/20210324/e2'
-data_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3'
+# data_folder = 'd:/Frankenrig/Experiments/i141_3/20210209/e3'
 nplanes = 3
 nchannels = 2
 mm3d_path = glob(data_folder+'/*.mat')[0]
@@ -109,7 +110,7 @@ server_settings = {
 }
 
 def test_run_server():
-    start_live2p(server_settings, params_dict=test_params_seeded, debug_level=1)
+    start_live2p(params_dict=test_params_seeded, debug_level=1, **server_settings)
     
 def test_send_setup():
     async def send():
@@ -123,7 +124,7 @@ def test_send_setup():
                 'folder': init_folder
             }
             await websocket.send(json.dumps(out))
-            out = {'EVENTYPE':'START'}
+            out = {'EVENTTYPE':'START'}
             await websocket.send(json.dumps(out))
                 
     asyncio.get_event_loop().run_until_complete(send())
@@ -156,14 +157,19 @@ def test_send_data(rate):
     print('Last frame (a stop frame) sent at: ', current_time)
     
 def main():
-    thread = multiprocessing.Process(target=test_run_server)
-    thread.start()
+    # srv = multiprocessing.Process(target=test_run_server)
+    # srv = threading.Thread(target=test_run_server)
+    # srv.start()
     
-    time.sleep(10)
-    test_send_setup()
+    # time.sleep(20)
+    # test_send_setup()
     
-    time.sleep(60)
-    test_send_data(3)
+    # time.sleep(120)
+    # test_send_data(1)
+    
+    # srv.join()
+    # srv.close()
+    test_run_server()
     
 if __name__ == '__main__':
     main()
