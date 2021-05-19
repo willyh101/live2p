@@ -5,7 +5,7 @@ import pandas as pd
 import scipy.stats as stats
 import sklearn.preprocessing
 
-def process_data(raw_traces, trial_lengths, fr, new_start, norm_method='scale', stim_times=None, total_length=None):
+def process_data(raw_traces, trial_lengths, fr, new_start=1, norm_method='scale', stim_times=None, total_length=None, **kwargs):
     """
     Run the post-processing pipeline on traces. Performs min subtraction, normalizes the data, and
     makes it into trialwise data (trials, cells, time). Optionally run stim alignment (either by 

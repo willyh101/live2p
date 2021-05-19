@@ -58,6 +58,7 @@ class Live2pServer:
         self.trialtimes_success = []
         
         self.executor = concurrent.futures.ThreadPoolExecutor()
+        # self.executor = concurrent.futures.ProcessPoolExecutor()
         
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
@@ -196,7 +197,7 @@ class Live2pServer:
             # why didn't you select any?
             if not isinstance(tiffs, tuple):
                 logger.error("You didn't select a file and there were none in the epoch folder. Quitting...")
-                self.loop.stop()
+                self._teardown()
                 
         self.init_files = tiffs
         
@@ -327,8 +328,8 @@ class Live2pServer:
         c_list = [r['C'] for r in results]
         c_all = np.concatenate(c_list, axis=0)
         out = {
-            'c': c_all.tolist(),
-            'splits': self.lengths,
+            'raw_traces': c_all.tolist(),
+            'trial_lengths': self.lengths,
             'trialtimes': self.trialtimes_success
         }
         
