@@ -1,8 +1,6 @@
 from termcolor import cprint
 import threading
 
-lock = threading.Lock()
-
 class Alert:
     alerts = {
         'none': '*',
@@ -36,6 +34,7 @@ class Alert:
             message (str): Message to print.
             level (str, optional): Specified alert level. Defaults to 'none'.
         """
+        
         self.message = message
         self.level = level
         self.color = self.colors[self.level]
@@ -47,5 +46,5 @@ class Alert:
         return f'{self.alerts[self.level]} {self.message}'
     
     def show(self, output):
-        with lock:
+        with threading.Lock():
             cprint(output, self.color)
