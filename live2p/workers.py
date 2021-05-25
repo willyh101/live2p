@@ -16,7 +16,7 @@ with warnings.catch_warnings():
 
 from .utils import format_json, make_ain, tic, toc, tiffs2array
 from .wrappers import tictoc
-from .analysis import find_com
+from .analysis.spatial import find_com
 
 logger = logging.getLogger('live2p')
 
@@ -99,8 +99,16 @@ class Worker:
             logger.warning('No cluster to shutdown.')
                 
     def _setup_folders(self):
-        self.temp_path = self.data_root/'live2p'/'tmp'
-        self.out_path = self.data_root/'live2p'/'out'
+        existing_folders = sorted(self.data_root.glob('live2p*'))
+        if len(existing_folders) > 0:
+            logger.debug('Found existing live2p folder.')
+            num_existing = len(existing_folders)
+            live2p_folder = self.data_root/f'live2p_{num_existing+1:03}'
+        else:
+            live2p_folder = self.data_root/'live2p'
+        
+        self.temp_path = live2p_folder/'tmp'
+        self.out_path = live2p_folder/'out'
             
         self.temp_path.mkdir(parents=True, exist_ok=True)
         logger.debug(f'Set temp_path to {self.temp_path}')
@@ -195,7 +203,8 @@ class RealTimeQueue(Worker):
         # extra pathing for realtime
         # add folder to hold inits
         self.init_fname = f'realtime_init_plane_{self.plane}.hdf5'
-        self.init_dir = self.data_root.parent/'live2p_init'
+        # self.init_dir = self.data_root.parent/'live2p_init' # moved to tmp folder
+        self.init_dir = self.temp_path
         self.init_path = self.init_dir/self.init_fname
         
         
@@ -322,14 +331,14 @@ class RealTimeQueue(Worker):
         Returns:
             json representation of the OnACID model
         """
-            # could make this block with just self.q.get() but a while loop might enable a 
-            # less buggy keyboard interrupt
+        
+        frame_time = []
         while True:
             frame = self.q.get()
             
             ###-----FRAME DATA-----###
             if isinstance(frame, np.ndarray):
-                frame_time = []
+                
                 t = tic()
                 
                 frame_ = frame[self.yslice, self.xslice].copy().astype(np.float32)

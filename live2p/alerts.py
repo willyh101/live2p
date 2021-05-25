@@ -1,4 +1,5 @@
 from termcolor import cprint
+import threading
 
 class Alert:
     alerts = {
@@ -18,6 +19,22 @@ class Alert:
     }
     
     def __init__(self, message, level='none'):
+        """
+        Prints out colored alert messages.
+        
+        Level       Header       Color
+        =====       ======       =====
+        'none'      *            white
+        'info'      [INFO]       yellow
+        'warn'      [WARN]       yellow
+        'error'     [ERROR]      red
+        'success'   [INFO]       green
+
+        Args:
+            message (str): Message to print.
+            level (str, optional): Specified alert level. Defaults to 'none'.
+        """
+        
         self.message = message
         self.level = level
         self.color = self.colors[self.level]
@@ -29,4 +46,5 @@ class Alert:
         return f'{self.alerts[self.level]} {self.message}'
     
     def show(self, output):
-        cprint(output, self.color)
+        with threading.Lock():
+            cprint(output, self.color)

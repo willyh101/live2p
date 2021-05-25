@@ -16,4 +16,5 @@ def _get_opengui(openfun, *args, **kwargs):
     root.attributes("-topmost", True)
     root.withdraw()
     dirname = openfun(parent=root, *args, **kwargs)
+    root.destroy()
     return dirname

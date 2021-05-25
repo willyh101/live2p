@@ -1,24 +1,22 @@
 import asyncio
+import concurrent.futures
 import json
 import logging
 import queue
 from pathlib import Path
-import signal
 
 import numpy as np
 import scipy.io as sio
 from ScanImageTiffReader import ScanImageTiffReader
 
+from ..alerts import Alert
+from ..analysis.traces import process_data
+from ..guis import openfilesgui
+from ..utils import now
+from ..workers import RealTimeQueue
+
 import websockets
 
-from live2p.analysis import process_data
-from live2p.guis import openfilesgui
-from live2p.workers import RealTimeQueue
-from live2p.utils import now
-
-from .alerts import Alert
-
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 logger = logging.getLogger('live2p')
 
 class Live2pServer:
@@ -29,7 +27,6 @@ class Live2pServer:
         self.ip = ip
         self.port = port
         self.url = f'ws://{ip}:{port}'
-        self.clients = set()
         
         # if output_folder is not None:
         self.output_folder = Path(output_folder) if output_folder else None
@@ -60,6 +57,9 @@ class Live2pServer:
         self.trialtimes_all = []
         self.trialtimes_success = []
         
+        self.executor = concurrent.futures.ThreadPoolExecutor()
+        # self.executor = concurrent.futures.ProcessPoolExecutor()
+        
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
             wslogs.setLevel(logging.DEBUG)
@@ -73,11 +73,29 @@ class Live2pServer:
         """Starts the WS server."""
         serve = websockets.serve(self.handle_incoming_ws, self.ip, self.port)
         asyncio.get_event_loop().run_until_complete(serve)
+        self.server = serve.ws_server
         Alert('Ready to launch!', 'success')
         
         self.loop = asyncio.get_event_loop()
-        self.loop.run_forever()
+        self.loop.create_task(self._wakeup())
+        self.loop.set_default_executor(self.executor)
+        try:
+            self.loop.run_forever()
+        except KeyboardInterrupt:
+            Alert('KeyboardInterrupt! Shutting down.', 'error')
+            self._teardown()
+            Alert('Shutdown complete.', 'error')
         
+    def _teardown(self):
+        self.server.close()
+        self.executor.shutdown()
+        self.loop.stop()
+        
+    async def _wakeup(self):
+        # enables ctrl-c killing of webserver
+        # might be redundant in py>3.8
+        while True:
+            await asyncio.sleep(1)
         
     async def handle_incoming_ws(self, websocket, path):
         """Handle incoming data via websocket."""
@@ -150,18 +168,12 @@ class Live2pServer:
             
         elif event_type == 'UHOH':
             Alert('Forced quit from SI.', 'error')
-            try:
-                logger.debug('Trying to stop any running queues.')
-                await self.stop_queues()
-            except Exception:
-                logger.debug('No queues to stop.')
-                pass   
-            self.loop.stop()
+            self._teardown()
     
         else:
             Alert(f'EVENTTYPE: {event_type} does not exist. Check server routing.')
-                
             
+     
     async def handle_setup(self, data):
         """Handle the initial setup data from ScanImage."""
         
@@ -178,17 +190,14 @@ class Live2pServer:
         # get from GUI pop-up if no tiffs present
         if len(tiffs) == 0 or self.use_init_gui:
             # do GUI in seperate thread, openfilesgui should return a list/tuple
-            tiff_task = self.loop.run_in_executor(None, openfilesgui, 
+            tiffs = await self.loop.run_in_executor(None, openfilesgui, 
                                              Path(self.folder).parent,
                                              'Select seed image.')
-            await tiff_task
-            
-            tiffs = tiff_task.result()
             
             # why didn't you select any?
             if not isinstance(tiffs, tuple):
                 logger.error("You didn't select a file and there were none in the epoch folder. Quitting...")
-                self.loop.stop()
+                self._teardown()
                 
         self.init_files = tiffs
         
@@ -319,8 +328,8 @@ class Live2pServer:
         c_list = [r['C'] for r in results]
         c_all = np.concatenate(c_list, axis=0)
         out = {
-            'c': c_all.tolist(),
-            'splits': self.lengths,
+            'raw_traces': c_all.tolist(),
+            'trial_lengths': self.lengths,
             'trialtimes': self.trialtimes_success
         }
         

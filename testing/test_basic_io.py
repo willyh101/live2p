@@ -1,6 +1,6 @@
 import json
-from ..server import Live2pServer
-from ..server import Alert
+from live2p.websockets import Live2pServer
+from live2p import Alert
 
 test_params = {
     'fr': 6.36,

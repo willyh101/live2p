@@ -4,6 +4,7 @@ Generic utilities for online analysis.
 
 import logging
 import os
+from pathlib import Path
 import time
 from datetime import datetime
 from glob import glob
@@ -193,3 +194,10 @@ def get_true_mm3d_range(path, buffer=0):
     sources = np.concatenate(mat['sources'].squeeze(), axis=2)
     vals = np.argwhere(sources)[:,1]
     return vals.min()-buffer, vals.max()+buffer
+
+def find_mm3d(folder):
+    expected_path = Path(folder,'makeMasks3D_img.mat')
+    if expected_path.exists():
+        return str(expected_path)
+    else:
+        raise FileNotFoundError(f'makeMasks3D_img not found in this folder: {expected_path.parent}')

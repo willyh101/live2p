@@ -1,3 +1,7 @@
+"""
+Tests the worker by using the offline pipeline on all planes. Runs start to end.
+"""
+
 import logging
 from glob import glob
 import sys
@@ -47,7 +51,7 @@ params = {
     'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
     'nb': 3,  # background compenents -> nb: 3 for complex
     'decay_time': 1.0,  # sensor tau
-    'gSig': (7, 7),  # expected half size of neurons in pixels, very important for proper component detection
+    'gSig': (5, 5),  # expected half size of neurons in pixels, very important for proper component detection
     'init_method': 'seeded',
     'motion_correct': True,
     'expected_comps': 300,

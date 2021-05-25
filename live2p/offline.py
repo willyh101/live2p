@@ -2,6 +2,7 @@ import logging
 import time
 from pathlib import Path
 from multiprocessing import Process, Queue
+import json
 
 from ScanImageTiffReader import ScanImageTiffReader
 
@@ -33,8 +34,13 @@ def append_to_queue(q, tiff_folder, tslice, add_rate=1):
         else:
             continue   
         # so we don't overload memory
-        time.sleep(add_rate)      
-    
+        time.sleep(add_rate)  
+            
+    fname = Path(tiff_folder,'file_lengths.json')
+    data = dict(lengths=lengths)
+    with open(fname, 'w') as f:
+        json.dump(data, f)
+        
     q.put('STOP')
     
     
