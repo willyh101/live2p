@@ -22,13 +22,13 @@ class Alert:
         """
         Prints out colored alert messages.
         
-        Level       Header       Color
-        =====       ======       =====
-        'none'      *            white
-        'info'      [INFO]       yellow
-        'warn'      [WARN]       yellow
-        'error'     [ERROR]      red
-        'success'   [INFO]       green
+        | Level     |   Header    |   Color    |
+        | -----     |   ------    |   -----    |
+        | 'none'    |   *         |   white    |
+        | 'info'    |   [INFO]    |   yellow   |
+        | 'warn'    |   [WARN]    |   yellow   |
+        | 'error'   |   [ERROR]   |   red      |
+        | 'success' |   [INFO]    |   green    |
 
         Args:
             message (str): Message to print.
