@@ -15,8 +15,9 @@ def start_live2p(params_dict, debug_level, ip=DEFAULT_IP, port=DEFAULT_PORT, **k
     
     Welcome to live2p (v{version('live2p')})!
 
+* Realtime, multiplane motion correction and source extraction using CaImAn OnACID, ScanImage, and websockets.
+
 * A popup GUI will ask you to select you seed image by default.
-* Still create a new epoch folder for the tiffs, so the results of live2p don't overwrite themselves if you run it multiple times.
 * The seed image should be ~500 frames and will take ~ 30 seconds to process before you start the experiment.
 
 Loading...
