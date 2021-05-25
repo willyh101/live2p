@@ -46,7 +46,7 @@ params = {
 
 @pytest.fixture
 def tiff_path():
-    return tiff_folder
+    return Path(tiff_folder)
     
 @pytest.fixture
 def live2p_worker():

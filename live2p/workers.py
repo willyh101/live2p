@@ -203,7 +203,8 @@ class RealTimeQueue(Worker):
         # extra pathing for realtime
         # add folder to hold inits
         self.init_fname = f'realtime_init_plane_{self.plane}.hdf5'
-        self.init_dir = self.data_root.parent/'live2p_init'
+        # self.init_dir = self.data_root.parent/'live2p_init' # moved to tmp folder
+        self.init_dir = self.temp_path
         self.init_path = self.init_dir/self.init_fname
         
         
