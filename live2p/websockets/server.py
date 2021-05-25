@@ -27,6 +27,7 @@ class Live2pServer:
         self.ip = ip
         self.port = port
         self.url = f'ws://{ip}:{port}'
+        self.clients = set()
         
         # if output_folder is not None:
         self.output_folder = Path(output_folder) if output_folder else None
@@ -100,7 +101,7 @@ class Live2pServer:
             Alert('KeyboardInterrupt! Shutting down.', 'error')
             self._teardown()
             Alert('Shutdown complete.', 'error')
-        
+
     def _teardown(self):
         self.server.close()
         self.executor.shutdown()
@@ -114,6 +115,9 @@ class Live2pServer:
         
     async def handle_incoming_ws(self, websocket, path):
         """Handle incoming data via websocket."""
+        
+        self.clients.add(websocket)
+        Alert(f'Connected to client {websocket.remote_address}', 'success')
         
         # ! I think this could go in context manager for graceful failures
         async for payload in websocket:
