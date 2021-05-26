@@ -18,7 +18,7 @@ class WebSocketServer:
         self.loop = asyncio.get_event_loop()
         
     def event(self, name):
-        # this works if called as @wss.event('SETUP)
+        # this works if called as @wss.event('SETUP')
         def event_wrapper(func):
             self.event_mapping[name] = func
             return func
@@ -70,3 +70,15 @@ class WebSocketServer:
             event = data.pop('EVENTTYPE')
             # await self.call_registered(event, data)
             await self.call_event(event, data)
+            
+    def in_background(self):
+        def decorator(func):
+            @functools.wraps
+            def exector_wrapper(*args, **kwargs):
+                task = self.loop.run_in_executor(
+                    None, lambda: func(*args, **kwargs)
+                )
+                return task
+            return exector_wrapper
+        return decorator
+                
