@@ -27,6 +27,7 @@ class Live2pServer:
         self.ip = ip
         self.port = port
         self.url = f'ws://{ip}:{port}'
+        self.clients = set()
         
         # if output_folder is not None:
         self.output_folder = Path(output_folder) if output_folder else None
@@ -63,29 +64,44 @@ class Live2pServer:
         if kwargs.pop('debug_ws', False):
             wslogs = logging.getLogger('websockets')
             wslogs.setLevel(logging.DEBUG)
-                
-        Alert(f'Starting WS server ({self.url})...', 'success')
         
         self._start_ws_server()
         
         
     def _start_ws_server(self):
         """Starts the WS server."""
-        serve = websockets.serve(self.handle_incoming_ws, self.ip, self.port)
-        asyncio.get_event_loop().run_until_complete(serve)
-        self.server = serve.ws_server
-        Alert('Ready to launch!', 'success')
+        try:
+            Alert(f'Starting server...', 'info')
+            serve = websockets.serve(self.handle_incoming_ws, self.ip, self.port)
+            asyncio.get_event_loop().run_until_complete(serve)
+            self.server = serve.ws_server
+            Alert(f'HOST={self.ip}', 'info')
+            Alert(f'PORT={self.port}', 'info')
+            
+        except OSError:
+            Alert(f'Port {self.port} at {self.ip} is already in use. Failed to start live2p server.', 'error')
+            self.port += 1
+            Alert(f'Attemping to start serving on port {self.port}', 'info')
+            serve = websockets.serve(self.handle_incoming_ws, self.ip, self.port)
+            asyncio.get_event_loop().run_until_complete(serve)
+            self.server = serve.ws_server
+            Alert(f'HOST={self.ip}', 'info')
+            Alert(f'PORT={self.port}', 'info')
+            Alert('Started live2p server on a non-standard port. Adjust the client accordinly!', 'warn')
+        
+        Alert('Live2p websocket server ready!', 'success')
         
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._wakeup())
         self.loop.set_default_executor(self.executor)
+        
         try:
             self.loop.run_forever()
         except KeyboardInterrupt:
             Alert('KeyboardInterrupt! Shutting down.', 'error')
             self._teardown()
             Alert('Shutdown complete.', 'error')
-        
+
     def _teardown(self):
         self.server.close()
         self.executor.shutdown()
@@ -99,6 +115,9 @@ class Live2pServer:
         
     async def handle_incoming_ws(self, websocket, path):
         """Handle incoming data via websocket."""
+        
+        self.clients.add(websocket)
+        Alert(f'Connected to client {websocket.remote_address}', 'success')
         
         # ! I think this could go in context manager for graceful failures
         async for payload in websocket:
