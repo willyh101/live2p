@@ -2,6 +2,8 @@
 Generic utilities for online analysis.
 """
 
+import asyncio
+import functools
 import logging
 import os
 from pathlib import Path
@@ -201,3 +203,23 @@ def find_mm3d(folder):
         return str(expected_path)
     else:
         raise FileNotFoundError(f'makeMasks3D_img not found in this folder: {expected_path.parent}')
+    
+def tictoc(func):
+    """Prints the runtime of the decorated function."""
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        start_time = time.perf_counter()
+        value = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        run_time = end_time - start_time
+        logger.info(f'<{func.__module__}.{func.__name__}> done in {run_time:.3f}s')
+        return value
+    return wrapper_timer
+
+def run_in_executor(func):
+    """Runs a blocking operation from a seperate thread."""
+    @functools.wraps(func)
+    def wrapper_run_in_executor(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_in_executor(None, lambda: func(*args, **kwargs))
+    return wrapper_run_in_executor

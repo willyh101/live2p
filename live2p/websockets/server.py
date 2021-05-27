@@ -117,7 +117,7 @@ class Live2pServer:
         """Handle incoming data via websocket."""
         
         self.clients.add(websocket)
-        Alert(f'Connected to client {websocket.remote_address}', 'success')
+        Alert(f'Connected to client {websocket.remote_address[0]}', 'success')
         
         # ! I think this could go in context manager for graceful failures
         async for payload in websocket:
@@ -284,6 +284,7 @@ class Live2pServer:
                 # iterate through planes to get lengths and add to queue
                 for p in range(self.nplanes):
                     # slice movie for this plane
+                    self.qs[p].put('TRIAL START')
                     t_slice = slice(p*self.nchannels,-1,self.nchannels*self.nplanes)
                     mov = data[t_slice, :, :]
                     
@@ -293,7 +294,10 @@ class Live2pServer:
                     
                     # add frames to the queue
                     for f in mov:
-                        self.qs[p].put_nowait(f.squeeze())
+                        self.qs[p].put(f.squeeze())
+                    
+                    # finally, add the trial done notification into the queue
+                    self.qs[p].put('TRIAL END')
 
             else:
                 logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
@@ -308,7 +312,7 @@ class Live2pServer:
     async def stop_queues(self):
         Alert('Recieved acqAbort. Workers will continue running until all frames are completed.', 'info')
         for q in self.qs:
-            q.put_nowait('STOP')
+            q.put('STOP')
             
             
     def get_last_tiff(self):
