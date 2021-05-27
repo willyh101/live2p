@@ -4,6 +4,7 @@ import json
 import logging
 import queue
 from pathlib import Path
+from collections import defaultdict
 
 import numpy as np
 import scipy.io as sio
@@ -57,6 +58,8 @@ class Live2pServer:
         # other logs
         self.trialtimes_all = []
         self.trialtimes_success = []
+        self.stim_log = defaultdict(list)
+        self.stim_times = []
         
         self.executor = concurrent.futures.ThreadPoolExecutor()
         # self.executor = concurrent.futures.ProcessPoolExecutor()
@@ -179,6 +182,12 @@ class Live2pServer:
             # scheduled as a co-routine. allows other socket messages to arrive in the socket.
             asyncio.create_task(self.run_queues())
             
+        elif event_type == 'LOG':
+            self.add_to_log(data)
+            
+        elif event_type == 'STIMTIMES':
+            self.append_stim_times(data)
+            
         
         ##-----Other useful messages-----###
         
@@ -192,6 +201,12 @@ class Live2pServer:
         else:
             Alert(f'EVENTTYPE: {event_type} does not exist. Check server routing.')
             
+    def add_to_log(self, data):
+        for k,v in data.items():
+            self.stim_log[k].append(v)
+            
+    def append_stim_times(self, data):
+        self.stim_times.append(data['times'])
      
     async def handle_setup(self, data):
         """Handle the initial setup data from ScanImage."""
@@ -312,8 +327,7 @@ class Live2pServer:
     async def stop_queues(self):
         Alert('Recieved acqAbort. Workers will continue running until all frames are completed.', 'info')
         for q in self.qs:
-            q.put('STOP')
-            
+            q.put('STOP')            
             
     def get_last_tiff(self):
         """Get the last tiff and make sure it's the correct size."""
