@@ -18,18 +18,26 @@ class WebSocketServer:
         self.loop = asyncio.get_event_loop()
         
     def event(self, name):
+        """
+        Decorater to register event into websocket server.
+        
+        Usage:
+        
+          wss = WebSocketServer()
+        
+          @wss.event('HELLO')
+          def handle_hello(data):
+              ...
+            
+
+        Args:
+            name (str): Name of event to register. Corresponds to the JSON 'EVENTTYPE' field.
+        """
         # this works if called as @wss.event('SETUP')
         def event_wrapper(func):
             self.event_mapping[name] = func
             return func
         return event_wrapper
-    
-    async def call_event(self, name, *args, **kwargs):
-        # get from events module
-        event = getattr(events_module, name.lower(), None)
-        if event is None:
-            raise NameError(f'No event registered to {name}')
-        return await event(*args, **kwargs)
     
     async def call_registered(self, name, *args, **kwargs):
         event = self.event_mapping.get(name, None)
@@ -68,8 +76,7 @@ class WebSocketServer:
         async for payload in websocket:
             data = json.loads(payload)
             event = data.pop('EVENTTYPE')
-            # await self.call_registered(event, data)
-            await self.call_event(event, data)
+            await self.call_registered(event, data)
             
     def in_background(self):
         def decorator(func):
