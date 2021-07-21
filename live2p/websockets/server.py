@@ -45,6 +45,7 @@ class Live2pServer:
         
         # custom settings
         self.use_init_gui = use_init_gui
+        self.short_tiff_threshold = 15
         
         # these are assigned by send_setup
         self.folder = None
@@ -280,8 +281,6 @@ class Live2pServer:
     async def put_tiff_frames_in_queue(self, tiff_name=None):
         # added sleep because last tiff isn't closed in time I think
         await asyncio.sleep(0.5)
-
-        short_tiff_threshold = 15
         
         try:
             # TODO:  fold this into below so there is less opening and closing of tiffs
@@ -293,7 +292,7 @@ class Live2pServer:
                 data = reader.data()
             
             # check if valid tiff
-            if data.shape[0] > short_tiff_threshold:    
+            if data.shape[0] > self.short_tiff_threshold:    
                 # first, log trial time
                 self.trialtimes_success.append(now())
                 # iterate through planes to get lengths and add to queue
@@ -315,7 +314,7 @@ class Live2pServer:
                     self.qs[p].put('TRIAL END')
 
             else:
-                logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
+                logger.warning(f'A tiff that was too short (<{self.short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
                 return
             
         except Exception: # ScanImage can't open file is a generic exception
