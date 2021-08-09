@@ -19,7 +19,9 @@ class WebSocketServer:
         
     def event(self, name):
         """
-        Decorater to register event into websocket server.
+        Decorater to register event into websocket server. The decorated function will be called
+        when the websocket server receives the corresponding text string. By default the JSON key
+        used is 'EVENTTYPE'.
         
         Usage:
         
@@ -27,13 +29,32 @@ class WebSocketServer:
         
           @wss.event('HELLO')
           def handle_hello(data):
+              print('Hello!')
               ...
+              
+        -In this example when the websocket server receives the key:value pair 'EVENTTYPE':'HELLO',
+         this function will be called. key:value pairs can be specified in Python as dictionaries
+         and in MATLAB as struct fields.
+         
+         eg:
+            (MATLAB)
+            out.EVENTTYPE = 'HELLO'
+            out = jsonencode(out);
+            ws.send(out);
+            
+            (PYTHON)
+            out = {
+                'EVENTTYPE': 'HELLO'
+            }
+            out = json.dumps(out)
+            ws.send(out)
+            
             
 
         Args:
-            name (str): Name of event to register. Corresponds to the JSON 'EVENTTYPE' field.
+            name (str): Name of event to register. Corresponds to the JSON 'EVENTTYPE' field (or
+                        custom fieldname if EVENT_KEY is changed).
         """
-        # this works if called as @wss.event('SETUP')
         def event_wrapper(func):
             self.event_mapping[name] = func
             return func
