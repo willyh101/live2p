@@ -5,7 +5,7 @@ import asyncio
 import json
 import concurrent.futures
 
-from . import events as events_module
+EVENT_KEY = 'EVENTTYPE'
 
 class WebSocketServer:
         
@@ -46,6 +46,9 @@ class WebSocketServer:
         return await event(*args, **kwargs)
     
     def run_server(self):
+        """
+        Runs the server and allows for keyboard interrupts.
+        """
         serve = websockets.serve(self.handle_incoming, self.ip, self.port)
         self.wss = serve.ws_server
         loop = asyncio.get_event_loop()
@@ -75,7 +78,7 @@ class WebSocketServer:
     async def handle_incoming(self, websocket, path):
         async for payload in websocket:
             data = json.loads(payload)
-            event = data.pop('EVENTTYPE')
+            event = data.pop(EVENT_KEY)
             await self.call_registered(event, data)
             
     def in_background(self):
