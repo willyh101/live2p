@@ -5,8 +5,6 @@ import asyncio
 import json
 import concurrent.futures
 
-EVENT_KEY = 'EVENTTYPE'
-
 class WebSocketServer:
         
     def __init__(self, ip=DEFAULT_IP, port=DEFAULT_PORT):
@@ -16,6 +14,7 @@ class WebSocketServer:
         self.executor = concurrent.futures.ThreadPoolExecutor()
         self.event_mapping = {}
         self.loop = asyncio.get_event_loop()
+        self.event_key = 'EVENTTYPE'
         
     def event(self, name):
         """
@@ -99,7 +98,7 @@ class WebSocketServer:
     async def handle_incoming(self, websocket, path):
         async for payload in websocket:
             data = json.loads(payload)
-            event = data.pop(EVENT_KEY)
+            event = data.pop(self.event_key)
             await self.call_registered(event, data)
             
     def in_background(self):
