@@ -14,8 +14,7 @@ with warnings.catch_warnings():
     from caiman.source_extraction.cnmf.online_cnmf import OnACID
     from caiman.source_extraction.cnmf.params import CNMFParams
 
-from .utils import format_json, make_ain, tic, toc, tiffs2array
-from .wrappers import tictoc
+from .utils import format_json, make_ain, tic, toc, tiffs2array, tictoc
 from .analysis.spatial import find_com
 
 logger = logging.getLogger('live2p')
@@ -196,6 +195,9 @@ class RealTimeQueue(Worker):
         # setup initial parameters
         self.t = 0 # current frame is on
         self.live_frame_count = 0
+        self.trial_starts = []
+        self.trial_ends = []
+        self.trial_lengths = []
         
         # placeholders
         self.acid = None
@@ -360,7 +362,19 @@ class RealTimeQueue(Worker):
             
             ###-----STOP PROCESSING-----###
             elif isinstance(frame, str):
-                if frame == 'STOP':                 
+                if frame == 'TRIAL START':
+                    # will reflect the actual start frame of a trial
+                    # add one as it has not been incr. yet
+                    self.trial_starts.append(self.t + 1) 
+                
+                elif frame == 'TRIAL END':
+                    # will reflect the last frame + 1 of a trial (eg. for exclusive slicing)
+                    # add one as it has not been incr. yet
+                    self.trial_ends.append(self.t + 1)
+                    trial_length = self.trial_ends[-1] - self.trial_starts[-1]
+                    self.trial_lengths.append(trial_length)
+                    
+                elif frame == 'STOP':                 
                     logger.info('Stopping live2p....')
                     now = datetime.now()
                     current_time = now.strftime("%H:%M:%S")
@@ -383,6 +397,7 @@ class RealTimeQueue(Worker):
                     break 
                 
                 else:
+                    logger.warning(f"Queue got str message '{frame}' does not have a matching method.")
                     continue         
                  
         return data
@@ -425,6 +440,7 @@ class RealTimeQueue(Worker):
             't': self.t,
             'CoM':coords.tolist(),
             'dims':dims,
+            'trial_lengths': self.trial_lengths,
         }
         
         data.update(model)

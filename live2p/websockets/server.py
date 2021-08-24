@@ -4,6 +4,7 @@ import json
 import logging
 import queue
 from pathlib import Path
+from collections import defaultdict
 
 import numpy as np
 import scipy.io as sio
@@ -44,6 +45,7 @@ class Live2pServer:
         
         # custom settings
         self.use_init_gui = use_init_gui
+        self.short_tiff_threshold = 15
         
         # these are assigned by send_setup
         self.folder = None
@@ -57,6 +59,8 @@ class Live2pServer:
         # other logs
         self.trialtimes_all = []
         self.trialtimes_success = []
+        self.stim_log = defaultdict(list)
+        self.stim_times = []
         
         self.executor = concurrent.futures.ThreadPoolExecutor()
         # self.executor = concurrent.futures.ProcessPoolExecutor()
@@ -117,7 +121,7 @@ class Live2pServer:
         """Handle incoming data via websocket."""
         
         self.clients.add(websocket)
-        Alert(f'Connected to client {websocket.remote_address}', 'success')
+        Alert(f'Connected to client {websocket.remote_address[0]}', 'success')
         
         # ! I think this could go in context manager for graceful failures
         async for payload in websocket:
@@ -179,6 +183,12 @@ class Live2pServer:
             # scheduled as a co-routine. allows other socket messages to arrive in the socket.
             asyncio.create_task(self.run_queues())
             
+        elif event_type == 'LOG':
+            self.add_to_log(data)
+            
+        elif event_type == 'STIMTIMES':
+            self.append_stim_times(data)
+            
         
         ##-----Other useful messages-----###
         
@@ -192,6 +202,12 @@ class Live2pServer:
         else:
             Alert(f'EVENTTYPE: {event_type} does not exist. Check server routing.')
             
+    def add_to_log(self, data):
+        for k,v in data.items():
+            self.stim_log[k].append(v)
+            
+    def append_stim_times(self, data):
+        self.stim_times.append(data['times'])
      
     async def handle_setup(self, data):
         """Handle the initial setup data from ScanImage."""
@@ -265,8 +281,6 @@ class Live2pServer:
     async def put_tiff_frames_in_queue(self, tiff_name=None):
         # added sleep because last tiff isn't closed in time I think
         await asyncio.sleep(0.5)
-
-        short_tiff_threshold = 15
         
         try:
             # TODO:  fold this into below so there is less opening and closing of tiffs
@@ -278,12 +292,13 @@ class Live2pServer:
                 data = reader.data()
             
             # check if valid tiff
-            if data.shape[0] > short_tiff_threshold:    
+            if data.shape[0] > self.short_tiff_threshold:    
                 # first, log trial time
                 self.trialtimes_success.append(now())
                 # iterate through planes to get lengths and add to queue
                 for p in range(self.nplanes):
                     # slice movie for this plane
+                    self.qs[p].put('TRIAL START')
                     t_slice = slice(p*self.nchannels,-1,self.nchannels*self.nplanes)
                     mov = data[t_slice, :, :]
                     
@@ -293,10 +308,13 @@ class Live2pServer:
                     
                     # add frames to the queue
                     for f in mov:
-                        self.qs[p].put_nowait(f.squeeze())
+                        self.qs[p].put(f.squeeze())
+                    
+                    # finally, add the trial done notification into the queue
+                    self.qs[p].put('TRIAL END')
 
             else:
-                logger.warning(f'A tiff that was too short (<{short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
+                logger.warning(f'A tiff that was too short (<{self.short_tiff_threshold} frames total) was attempted to be added to the queue and was skipped.')
                 return
             
         except Exception: # ScanImage can't open file is a generic exception
@@ -308,8 +326,7 @@ class Live2pServer:
     async def stop_queues(self):
         Alert('Recieved acqAbort. Workers will continue running until all frames are completed.', 'info')
         for q in self.qs:
-            q.put_nowait('STOP')
-            
+            q.put('STOP')            
             
     def get_last_tiff(self):
         """Get the last tiff and make sure it's the correct size."""
