@@ -43,5 +43,8 @@ def main():
     rigfile = importlib.import_module('rig_files.' + args.rigfile)
     
     params = getattr(rigfile, rigfile.mode)
+    settings = getattr(rigfile, 'server_settings')
+    settings.pop('ip')
+    settings.pop('port')
     
-    start_live2p(params_dict=params, debug_level=args.debug, ip=args.ip, port=args.port)
+    start_live2p(params_dict=params, debug_level=args.debug, ip=args.ip, port=args.port, **settings)

@@ -121,4 +121,4 @@ def assign_params(mode):
 # run everything
 if __name__ == '__main__':
     params = locals()[mode]
-    start_live2p(server_settings, params_dict=params, debug_level=log_level)
+    start_live2p(params_dict=params, debug_level=log_level, **server_settings)
