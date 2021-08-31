@@ -52,15 +52,15 @@ class Live2pServer:
         self.fr = None
         self.nplanes = 3
         self.nchannels = 2
-        
-        # these are recieved from the daq
-        # self.stim_times = 1
-        
+
         # other logs
+        self.stim_times_key = 'stim_times'
+        self.stim_cond_key = 'stim_cond'
+        self.vis_cond_key = 'vis_id'
+
         self.trialtimes_all = []
         self.trialtimes_success = []
         self.stim_log = defaultdict(list)
-        self.stim_times = []
         
         self.executor = concurrent.futures.ThreadPoolExecutor()
         # self.executor = concurrent.futures.ProcessPoolExecutor()
@@ -184,11 +184,7 @@ class Live2pServer:
             asyncio.create_task(self.run_queues())
             
         elif event_type == 'LOG':
-            self.add_to_log(data)
-            
-        elif event_type == 'STIMTIMES':
-            self.append_stim_times(data)
-            
+            self.add_to_log(data)  
         
         ##-----Other useful messages-----###
         
@@ -205,9 +201,6 @@ class Live2pServer:
     def add_to_log(self, data):
         for k,v in data.items():
             self.stim_log[k].append(v)
-            
-    def append_stim_times(self, data):
-        self.stim_times.append(data['times'])
      
     async def handle_setup(self, data):
         """Handle the initial setup data from ScanImage."""
@@ -378,7 +371,9 @@ class Live2pServer:
             
             # do proccessing and save trialwise json
             # ! fix this, traces is actually getting psths and this is confusing AF
-            _, traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=None)
+            # for now, take the first stim time only bc alignment can't handle variable stim times yet
+            stim_times = self.stim_log.get(self.stim_times_key)[0] # will return None and not do alignment if no stim times
+            _, traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=stim_times)
             out = {
                 'traces': traces.tolist(),
             }
@@ -397,7 +392,10 @@ class Live2pServer:
             mat = {
                 'onlineTraces': c_all,
                 'onlinePSTHs': traces,
-                'onlineTrialLengths': self.lengths
+                'onlineTrialLengths': self.lengths,
+                'onlineStimCond': self.stim_log.get(self.stim_cond_key),
+                'onlineStimTimes': self.stim_log.get(self.stim_times_key),
+                'onlineVisCond': self.stim_log.get(self.vis_cond_key)
             }
             sio.savemat(str(fname), mat)
             
