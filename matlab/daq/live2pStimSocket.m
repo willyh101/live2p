@@ -1,7 +1,7 @@
 function live2pStimSocket
 
 global ExpStruct
-global live2p_ws
+global websocket
 
 seqNum = numel(find(diff(ExpStruct.triggerPuffer)==1));
 
@@ -62,5 +62,5 @@ sendThisCaiman.stim_cond = sendThisSI.power;
 sendThisCaiman.stim_times = sendThisSI.times;
 sendThisCaiman.vis_id = visCond;
 
-live2p_ws.send(jsonencode(sendThisCaiman));
+websocket.send(jsonencode(sendThisCaiman));
 disp('trial data sent to caiman')
