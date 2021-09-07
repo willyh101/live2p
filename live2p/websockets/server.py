@@ -22,7 +22,7 @@ logger = logging.getLogger('live2p')
 
 class Live2pServer:
     def __init__(self, ip, port, params, 
-                  output_folder=None, Ain_path=None, num_frames_max=10000, 
+                  output_folder=None, Ain_path=None, 
                   postprocess_kws=None, use_init_gui=True, **kwargs):
         
         self.ip = ip
@@ -35,13 +35,15 @@ class Live2pServer:
             
         self.params = params
         self.Ain_path = Ain_path     
-        self.num_frames_max = num_frames_max
         self.init_files = None
         self.qs = []
         self.workers = None
         self.lengths = []
-        self.kwargs = kwargs
         self.postprocess_kws = postprocess_kws
+
+        self.kwargs = kwargs
+        self.kwargs.setdefault('num_frames_max', 20000)
+        
         
         # custom settings
         self.use_init_gui = use_init_gui

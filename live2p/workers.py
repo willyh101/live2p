@@ -175,6 +175,7 @@ class RealTimeQueue(Worker):
 
         self.q = q
         self.num_frames_max = num_frames_max
+        logger.debug(f'Max frames set to {self.num_frames_max}')
         
         # set slicing
         self.tslice = kwargs.get('tslice', slice(plane*nchannels, -1, nchannels * nplanes))
