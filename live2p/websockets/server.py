@@ -372,8 +372,8 @@ class Live2pServer:
             # do proccessing and save trialwise json
             # ! fix this, traces is actually getting psths and this is confusing AF
             # for now, take the first stim time only bc alignment can't handle variable stim times yet
-            stim_times = self.stim_log.get(self.stim_times_key)[0] # will return None and not do alignment if no stim times
-            _, traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=stim_times)
+            # stim_times = self.stim_log.get(self.stim_times_key)[0] # will return None and not do alignment if no stim times
+            _, traces = process_data(**out, normalizer='zscore', fr=self.fr, stim_times=None)
             out = {
                 'traces': traces.tolist(),
             }
@@ -393,9 +393,9 @@ class Live2pServer:
                 'onlineTraces': c_all,
                 'onlinePSTHs': traces,
                 'onlineTrialLengths': self.lengths,
-                'onlineStimCond': self.stim_log.get(self.stim_cond_key),
-                'onlineStimTimes': self.stim_log.get(self.stim_times_key),
-                'onlineVisCond': self.stim_log.get(self.vis_cond_key)
+                # 'onlineStimCond': self.stim_log.get(self.stim_cond_key),
+                # 'onlineStimTimes': self.stim_log.get(self.stim_times_key),
+                # 'onlineVisCond': self.stim_log.get(self.vis_cond_key)
             }
             sio.savemat(str(fname), mat)
             

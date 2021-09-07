@@ -24,13 +24,13 @@ y_start = 0
 y_end = 512
 
 # pre-allocated frame buffer
-max_frames = 20000
+max_frames = 200000
 
 # networking options
 # this computers IP (should be static at 192.168.10.104)
 # the corresponding IP addresses in networking.py must match exactly
 # you could also use 'localhost' if not sending any info from the DAQ
-ip = 'localhost'
+ip = '192.168.10.104'
 port = 6000
 
 # path to caiman data output folder on server, doesn't need to change as long as the server is there
