@@ -108,16 +108,6 @@ server_settings = {
     'num_frames_max': max_frames,
 }
 
-
-def assign_params(mode):
-    if mode == 'seeded':
-        params = seeded
-    elif mode == 'unseeded':
-        params = undseeded
-    else:
-        raise NotImplementedError('Not a mode! You can choose seeded or unseeded.')
-    return params
-
 # run everything
 if __name__ == '__main__':
     params = locals()[mode]
