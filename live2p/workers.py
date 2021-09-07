@@ -403,6 +403,7 @@ class RealTimeQueue(Worker):
         return data
                 
     def update_acid(self, **kwargs):
+        # ! THIS ISN'T ACTUALLY CALLED ANYWHERE AND NO KWARGS ARE PASSED
         for k,v in kwargs.items():
             setattr(self.acid.estimates, k, v)
     
