@@ -5,7 +5,7 @@ hSI = src.hSI;
 
 out.EVENTTYPE = 'SETUP';
 out.nchannels = length(hSI.hChannels.channelSave);
-out.nplanes = hSI.hStackManager.numSlices;
+out.nplanes = numel(hSI.hStackManager.zs);
 out.fr = hSI.hRoiManager.scanVolumeRate;
 out.folder = hSI.hScan2D.logFilePath;
 % need to grab these from workspace somehow

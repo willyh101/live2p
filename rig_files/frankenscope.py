@@ -5,10 +5,11 @@ from live2p.start_live2p import start_live2p
 # I recommend using removing 110 pixels from each side. Maybe 120 for holography. Maybe less for vis stim. But 
 # it has to match whatever you did in MakeMasks3D.
 # also set the max number of frames you expect, is an upper limit so it can be really high (used for memory allocation)
-x_start = 120
-x_end = 512-120
+x_start = 110
+x_end = 512-110
 
-# choose one
+# choose a mode to run
+# must be the name of an existing dict below
 mode = 'seeded' # or 'unseeded' but also untested
 
 # makeMasks3D path
@@ -24,7 +25,10 @@ y_start = 0
 y_end = 512
 
 # pre-allocated frame buffer
-max_frames = 200000
+max_frames = 25000
+
+# sensor tau off
+sensor_tau = 1.0 # float, in seconds
 
 # networking options
 # this computers IP (should be static at 192.168.10.104)
@@ -61,7 +65,7 @@ log_level = 1
 seeded = {
     'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
     'nb': background,  # background compenents -> nb: 3 for complex
-    'decay_time': 1.0,  # sensor tau
+    'decay_time': sensor_tau,  # sensor tau
     'gSig': (7, 7),  # expected half size of neurons in pixels, very important for proper component detection
     'init_method': 'seeded', # or 'cnmf'
     'motion_correct': True,
@@ -81,7 +85,7 @@ seeded = {
 undseeded = {
     'p': 1,  # deconv 0 is off, 1 is slow, 2 is fast
     'nb': background,  # background compenents -> nb: 3 for complex
-    'decay_time': 1.0,  # sensor tau
+    'decay_time': sensor_tau,  # sensor tau
     'gSig': (7, 7),  # expected half size of neurons in pixels, very important for proper component detection
     'init_method': 'bare',
     'motion_correct': True,
