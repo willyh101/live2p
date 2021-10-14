@@ -2,6 +2,7 @@
 
 **Live2p** - online implentation of [CaImAn](https://github.com/flatironinstitute/CaImAn) for realtime analysis 2-photon calcium imaging with [ScanImage](http://scanimage.vidriotechnologies.com/).
 
+
 ## Installation
 
 1. Download and install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda 3](https://www.anaconda.com/products/individual) if you haven't already. Click YES to add conda to PATH. It's not actually required just useful in general.
@@ -15,6 +16,8 @@
 1. Activate the environment `conda activate live2p`
 
 1. Install the live2p package by running `pip install -e .` (the . is intentional) On some machines you may need to run `pip3 install -e .` if the previous fails.
+
+### For online analysis also do this:
 
 1. Lastly, download and install the most recent [MatlabWebsocket](https://github.com/jebej/MatlabWebSocket) from GitHub. Follow their install instructions.
 

@@ -45,14 +45,19 @@ def mm3d_to_img(path, chan=0):
 def load_sources(path):
     mat = sio.loadmat(path)
     srcs = mat['sources'].squeeze()
-    srcs = np.array([i.max(2) for i in srcs])
-    return srcs
+    if srcs.ndim == 3:
+        return srcs.max(2)
+    else:
+        srcs = np.array([i.max(2) for i in srcs])
+        return srcs
 
 def make_ain(path, plane, left_crop, right_crop):
     mat = sio.loadmat(path)
     srcs = mat['sources'].squeeze()
     
-    srcs = srcs[plane]
+    if srcs.ndim != 3:
+        srcs = srcs[plane]
+        
     srcs = srcs[:, left_crop:right_crop, :]
     
     A = np.zeros((np.prod(srcs.shape[:2]), srcs.shape[2]), dtype=bool)
@@ -193,8 +198,10 @@ def get_tslice(z_idx, ch_idx, nchannels, nplanes):
 
 def get_true_mm3d_range(path, buffer=0):
     mat = sio.loadmat(path)
-    sources = np.concatenate(mat['sources'].squeeze(), axis=2)
-    vals = np.argwhere(sources)[:,1]
+    srcs = mat['sources'].squeeze()
+    if srcs.ndim != 3:
+        srcs = np.concatenate(srcs, axis=2)
+    vals = np.argwhere(srcs)[:,1]
     return vals.min()-buffer, vals.max()+buffer
 
 def find_mm3d(folder):
@@ -223,3 +230,6 @@ def run_in_executor(func):
         loop = asyncio.get_event_loop()
         return loop.run_in_executor(None, lambda: func(*args, **kwargs))
     return wrapper_run_in_executor
+
+def load_acid(filepath):
+        return cm.source_extraction.cnmf.online_cnmf.load_OnlineCNMF(str(filepath))
