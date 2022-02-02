@@ -178,7 +178,7 @@ class RealTimeQueue(Worker):
         logger.debug(f'Max frames set to {self.num_frames_max}')
         
         # set slicing
-        self.tslice = kwargs.get('tslice', slice(plane*nchannels, -1, nchannels * nplanes))
+        self.tslice = kwargs.get('tslice', slice(plane*nchannels, None, nchannels * nplanes))
         self.xslice = kwargs.get('xslice', slice(0, 512))
         self.yslice = kwargs.get('yslice', slice(0, 512))
 
@@ -392,7 +392,7 @@ class RealTimeQueue(Worker):
                         # process the final data
                         logger.exception('Error with saving OnACID hdf5.')
                         
-                    self.save_json()
+                    # self.save_json()
                     data = self._model2dict()
 
                     break 

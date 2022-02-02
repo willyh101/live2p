@@ -194,7 +194,7 @@ def load_as_obj(caiman_data_path):
     return cm.source_extraction.cnmf.cnmf.load_CNMF(caiman_data_path)
 
 def get_tslice(z_idx, ch_idx, nchannels, nplanes):
-    return slice((z_idx*nchannels)+ch_idx, -1, nplanes*nchannels)
+    return slice((z_idx*nchannels)+ch_idx, None, nplanes*nchannels)
 
 def get_true_mm3d_range(path, buffer=0):
     mat = sio.loadmat(path)
