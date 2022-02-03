@@ -294,7 +294,7 @@ class Live2pServer:
                 for p in range(self.nplanes):
                     # slice movie for this plane
                     self.qs[p].put('TRIAL START')
-                    t_slice = slice(p*self.nchannels,-1,self.nchannels*self.nplanes)
+                    t_slice = slice(p*self.nchannels,None,self.nchannels*self.nplanes)
                     mov = data[t_slice, :, :]
                     
                     # get lengths for one plane only/once per tiff

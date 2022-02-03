@@ -25,7 +25,8 @@ y_start = 0
 y_end = 512
 
 # pre-allocated frame buffer
-max_frames = 25000
+# 4 hours is ~100k frames
+max_frames = 128000
 
 # sensor tau off
 sensor_tau = 1.0 # float, in seconds
@@ -34,7 +35,7 @@ sensor_tau = 1.0 # float, in seconds
 # this computers IP (should be static at 192.168.10.104)
 # the corresponding IP addresses in networking.py must match exactly
 # you could also use 'localhost' if not sending any info from the DAQ
-ip = '192.168.10.104'
+ip = 'localhost'
 port = 6000
 
 # path to caiman data output folder on server, doesn't need to change as long as the server is there
