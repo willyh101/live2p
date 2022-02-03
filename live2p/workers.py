@@ -98,13 +98,15 @@ class Worker:
             logger.warning('No cluster to shutdown.')
                 
     def _setup_folders(self):
-        existing_folders = sorted(self.data_root.glob('live2p*'))
-        if len(existing_folders) > 0:
-            logger.debug('Found existing live2p folder.')
-            num_existing = len(existing_folders)
-            live2p_folder = self.data_root/f'live2p_{num_existing+1:03}'
-        else:
-            live2p_folder = self.data_root/'live2p'
+        # existing_folders = sorted(self.data_root.glob('live2p*'))
+        # if len(existing_folders) > 0:
+        #     logger.debug('Found existing live2p folder.')
+        #     num_existing = len(existing_folders)
+        #     live2p_folder = self.data_root/f'live2p_{num_existing+1:03}'
+        # else:
+        #     live2p_folder = self.data_root/'live2p'
+        
+        live2p_folder = self.data_root/'live2p'
         
         self.temp_path = live2p_folder/'tmp'
         self.out_path = live2p_folder/'out'
