@@ -1,8 +1,8 @@
-name: live2p
+name: live2p_test
 channels:
  - conda-forge
 dependencies:
- - caiman=1.8.8
+ - caiman
  - python
  - pip
  - pandas

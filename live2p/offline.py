@@ -97,7 +97,7 @@ def run_plane_offline_multifolder(plane, tiff_folders, params, x_start, x_end,
     q = Queue()
     xslice = slice(x_start, x_end)
     
-    tiff_files_init = Path(tiff_folders[0]).glob('*.tif*')
+    tiff_files_init = Path(tiff_folders[0]).parent.rglob('*.tif*')
     mm3d_file = str(list(Path(tiff_folders[0]).parent.glob('*makeMasks3D_img.mat'))[0])
     
     if not mm3d_file:
