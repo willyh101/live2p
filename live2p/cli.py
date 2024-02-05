@@ -1,5 +1,6 @@
 import argparse
 import importlib
+import logging
 from .start_live2p import start_live2p, DEFAULT_IP, DEFAULT_PORT
 
 def make_args():
@@ -42,8 +43,20 @@ def main():
     
     rigfile = importlib.import_module('rig_files.' + args.rigfile)
     
+    # add cli logger
+    logger_cli = logging.getLogger('live2p_cli')
+    logformat = '{relativeCreated:08.0f} - {levelname:8} - [{module}:{funcName}:{lineno}] - {message}'
+    logging.basicConfig(level=logging.INFO, format=logformat, style='{') #sets caiman loglevel
+    if args.debug > 0:
+        logger_cli.setLevel(logging.DEBUG)
+    logger_cli.debug(f'Will load settings using rigfile: {args.rigfile}.py')
+    
     params = getattr(rigfile, rigfile.mode)
     settings = getattr(rigfile, 'server_settings')
+    
+    for k, v in settings.items():
+        logger_cli.debug(f'{k}: {v}')
+    
     settings.pop('ip')
     settings.pop('port')
     
