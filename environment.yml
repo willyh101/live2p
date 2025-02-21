@@ -1,4 +1,4 @@
-name: live2p_test
+name: live2p
 channels:
  - conda-forge
 dependencies:
