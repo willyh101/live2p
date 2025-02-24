@@ -11,6 +11,6 @@ dependencies:
  - jupyterlab
  - notebook
  - pip:
-   - websockets
+   - websockets=12.0
    - scanimage-tiff-reader
    - pytest
